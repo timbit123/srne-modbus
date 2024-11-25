@@ -66,6 +66,7 @@ mqtt_set_config: dict[str, any] = {
     "charging/total_charging_current_limit": modbus.write_total_charging_current_limit,
     "inverter/power_saving": modbus.write_power_saving_mode,
     "inverter/output_priority": modbus.write_output_priority,
+    "inverter/battery_priority": modbus.write_battery_discharge_enabled,
 }
 
 mqtt_config: dict[str, dict[str, any]] = {
@@ -192,6 +193,23 @@ mqtt_config: dict[str, dict[str, any]] = {
             "icon": "mdi:current-ac",
             "unit_of_measurement": "A",
             "device_class": "current",
+        },
+    },
+    "battery/power": {
+        "enabled": split_phase >= 1,
+        "value": lambda: round(
+            mqtt_config["battery/current"]["last_value"]
+            * mqtt_config["battery/voltage"]["last_value"],
+            1,
+        ),
+        "interval": battery_interval,
+        "last_update": None,
+        "last_value": 0,
+        "config": {
+            "name": "Battery power",
+            "icon": "mdi:flash",
+            "unit_of_measurement": "W",
+            "device_class": "power",
         },
     },
     "battery/temperature": {
@@ -1132,6 +1150,23 @@ mqtt_config: dict[str, dict[str, any]] = {
             "icon": "mdi:export",
             "options": ["Solar first", "Utility first", "Solar/Battery/Utility"],
             "command_topic": "inverter/output_priority",
+        },
+    },
+    "inverter/battery_priority": {
+        "value": modbus.read_battery_discharge_enabled,
+        "interval": general_interval,
+        "last_update": None,
+        "topic_type": "select",
+        "config": {
+            "name": "Battery State Priority",
+            "icon": "mdi:export",
+            "options": [
+                "Standby",
+                "Battery discharge for Load",
+                "Battery discharge for home",
+                "Battery discharge for grid",
+            ],
+            "command_topic": "inverter/battery_priority",
         },
     },
     # "battery/shutdown_voltage": {},

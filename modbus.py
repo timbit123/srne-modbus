@@ -1218,10 +1218,12 @@ def read_output_priority():
 
 
 def write_output_priority(value: str):
+    print(value)
     output_priority = {"Solar first": 0, "Utility first": 1, "Solar/Battery/Utility": 2}
     if value in output_priority:
-        value = output_priority[value]
-        instr.write_register(0xE204, value)
+        int_value = output_priority[value]
+        print(int_value)
+        instr.write_register(0xE204, int_value)
 
 
 def read_grid_charging_current_limit():
@@ -1296,6 +1298,7 @@ def read_power_saving_mode():
 
 
 def write_power_saving_mode(value: str):
+    print("power saving: " + value)
     instr.write_register(0xE20C, int(value))
 
 
@@ -1337,14 +1340,14 @@ def read_charging_source_priority():
 
 def write_charging_source_priority(value: str):
     priority = {
-        "PV priority": 0,  # (AC power charging available when PV fails)",
-        "AC power priority": 1,  # (PV charging available when AC fails)",
-        "Hybrid mode": 2,  # (AC power and PV charging at the same time, with PV priority)",
-        "PV only": 3,
+        "Solar first": 0,  # (AC power charging available when PV fails)",
+        "Utility first": 1,  # (PV charging available when AC fails)",
+        "Solar and utility simultaneously": 2,  # (AC power and PV charging at the same time, with PV priority)",
+        "Solar only": 3,
     }
     if value in priority:
-        value = priority[value]
-        instr.write_register(0xE20F, value)
+        int_value = priority[value]
+        instr.write_register(0xE20F, int_value)
 
 
 def read_alarm_enabled():
@@ -1416,6 +1419,35 @@ def read_dc_load_switch():
 def write_dc_load_switch(value: str):
     value = int(value)
     instr.write_register(0xE216, value)
+
+
+#################### P08 Setting Area for Inverter Grid-connection Parameters ###############
+
+
+def read_battery_discharge_enabled():
+    result = instr.read_register(0xE42A)
+    priority = {
+        0: "Standby",
+        1: "Battery discharge for Load",  # (PV charging available when AC fails)",
+        2: "Battery discharge for home",  # (AC power and PV charging at the same time, with PV priority)",
+        3: "Battery discharge for grid",
+    }
+    if result in priority:
+        debug("Battery Discharge Enabled: " + priority[result])
+        return priority[result]
+    return result
+
+
+def write_battery_discharge_enabled(value: str):
+    priority = {
+        "Standby": 0,  # (AC power charging available when PV fails)",
+        "Battery discharge for Load": 1,  # (PV charging available when AC fails)",
+        "Battery discharge for home": 2,  # (AC power and PV charging at the same time, with PV priority)",
+        "Battery discharge for grid": 3,
+    }
+    if value in priority:
+        int_value = priority[value]
+        instr.write_register(0xE42A, int_value)
 
 
 #################### P09 Power Statistics Historical Data ##################

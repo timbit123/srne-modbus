@@ -3,7 +3,7 @@ import paho.mqtt.client as mqtt
 import time
 import json
 from dotenv import load_dotenv
-from modbus import debug, read_errors
+from modbus import debug
 from mqtt_topic_config import mqtt_config, device, mqtt_set_config
 
 load_dotenv()
@@ -55,9 +55,6 @@ else:
 # Connect to the MQTT server
 client.connect(host, port)
 mqtt_topic = os.getenv("MQTT_TOPIC")
-
-read_errors()
-exit()
 
 for name, vals in mqtt_config.items():
     if not vals.get("enabled", True):
