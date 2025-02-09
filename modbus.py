@@ -1,87 +1,44 @@
 import os
 import minimalmodbus
 from datetime import datetime
+from dotenv import load_dotenv
 
-modbus_addess: int = (
+load_dotenv()
+
+modbus_address: int = (
     int(os.getenv("MODBUS_ADDRESS")) if os.getenv("MODBUS_ADDRESS") else 0
 )
-instr = minimalmodbus.Instrument("/dev/ttyUSB0", 1)
+modbus_instrument = os.getenv("MODBUS_DEVICE")
+print("using address %d on device %s"%(modbus_address,modbus_instrument))
+instr = minimalmodbus.Instrument(modbus_instrument, modbus_address)
 instr.serial.baudrate = 9600
 instr.serial.timeout = 1
-# instr.debug = True
+#instr.debug = True
 
 
 def debug(msg):
     if os.getenv("DEBUG") == "true":
         print("[{}] {}".format(datetime.now(), msg))
 
+############ Generic Register Functions #####################
 
-######### System Information #############
-def read_cpu_build_time():
-    result = instr.read_string(0x021, 20)
-    debug("Build Time: " + result)
+def read_register_str(register:int, name:str, clean:bool = False, prefix:str = ""):
+    result = instr.read_string(register, 20)
+    if clean:
+        result = "".join([char for char in result if char != "\x00"])
+    result = prefix + result
+    debug(name + ": " + result)
     return result
 
-
-def read_serial_number():
-    result = instr.read_string(0x035, 20)
-    debug("Serial Number: " + result)
-    cleaned_result = "".join([char for char in result if char != "\x00"])
-    return cleaned_result
-
-
-def read_minor_version():
-    result = instr.read_register(0x00A)
-    debug("Minor Version: " + str(result))
+def read_register_value(register:int, name:str, unit:str = "", scale:float = 1.0, prefix:str = "", integer:bool = False, format_str:str ="{:.2f}"):
+    result = instr.read_register(register)
+    result = float(result) * scale
+    if integer:
+        format_str = "{:d}"
+        result = int(result)
+    result = prefix + format_str.format(result)
+    debug(name + ": " + result + unit)
     return result
-
-
-def read_app_version():
-    result = instr.read_registers(0x014, 2)
-    app_version_str = "v{:.2f}".format(result[0] / 100)
-    debug("App Version: " + app_version_str)
-    return app_version_str
-
-
-def read_bootloader_version():
-    result = instr.read_registers(0x014, 2)
-    bootloader_version_str = "v{:.2f}".format(result[1] / 100)
-    debug("Bootloader: " + bootloader_version_str)
-    return bootloader_version_str
-
-
-def read_control_panel_version():
-    result = instr.read_registers(0x016, 2)
-    control_panel_version_str = "v{:.2f}".format(result[0] / 100)
-    debug("Control Panel Version: " + control_panel_version_str)
-    return control_panel_version_str
-
-
-def read_power_amplifier_version():
-    result = instr.read_registers(0x016, 2)
-    power_amplifier_board_version = "v{:.2f}".format(result[1] / 100)
-    debug("Power Amplifier Board Version: " + power_amplifier_board_version)
-    return power_amplifier_board_version
-
-
-def read_rs485_address():
-    result = instr.read_register(0x01A)
-    debug("RS485 Address: " + str(result))
-    return result
-
-
-def read_model():
-    result = instr.read_register(0x01B)
-    debug("Model: " + str(result))
-    return result
-
-
-def read_rs485_version():
-    result = instr.read_register(0x01C)
-    rs485_version_str = "v{:.2f}".format(result / 100)
-    debug("RS485 Version: " + rs485_version_str)
-    return rs485_version_str
-
 
 #################### P01 DC Data Area ##################
 
@@ -316,8 +273,8 @@ def read_load_active_power_a():
     return result
 
 
-def read_load_reactive_power_a():
-    result = instr.read_register(0x21B)
+def read_load_apparent_power_a():
+    result = instr.read_register(0x21C)
     result = result
     debug("Load Apparent Power VA: " + str(result) + "VA")
     return result
@@ -461,15 +418,15 @@ def read_load_active_power_c():
     return result
 
 
-def read_load_reactive_power_b():
+def read_load_apparent_power_b():
     result = instr.read_register(0x234)
-    debug("Load Reactive Power B: " + str(result) + "VA")
+    debug("Load Apparent Power B: " + str(result) + "VA")
     return result
 
 
-def read_load_reactive_power_c():
+def read_load_apparent_power_c():
     result = instr.read_register(0x235)
-    debug("Load Reactive Power C: " + str(result) + "VA")
+    debug("Load Apparent Power C: " + str(result) + "VA")
     return result
 
 
@@ -500,44 +457,47 @@ def read_grid_current_c():
 
 
 def read_grid_active_power_a():
-    # negative value when inverter is consuming power from the grid
-    # positive value when inverter is exporting power to the grid
-    result = instr.read_register(0x23A, signed=True)
+    # keep consistent with battery power convention
+    # positive value when inverter is consuming power from the grid
+    # negative value when inverter is exporting power to the grid
+    result = -instr.read_register(0x23A, signed=True)
     debug("Grid Active Power A: " + str(result) + "W")
     return result
 
 
 def read_grid_active_power_b():
-    # negative value when inverter is consuming power from the grid
-    # positive value when inverter is exporting power to the grid
-    result = instr.read_register(0x23B, signed=True)
+    # keep consistent with battery power convention
+    # positive value when inverter is consuming power from the grid
+    # negative value when inverter is exporting power to the grid
+    result = -instr.read_register(0x23B, signed=True)
     debug("Grid Active Power B: " + str(result) + "W")
     return result
 
 
 def read_grid_active_power_c():
-    # negative value when inverter is consuming power from the grid
-    # positive value when inverter is exporting power to the grid
-    result = instr.read_register(0x23C, signed=True)
+    # keep consistent with battery power convention
+    # positive value when inverter is consuming power from the grid
+    # negative value when inverter is exporting power to the grid
+    result = -instr.read_register(0x23C, signed=True)
     debug("Grid Active Power C: " + str(result) + "W")
     return result
 
 
-def read_grid_reactive_power_a():
+def read_grid_apparent_power_a():
     result = instr.read_register(0x23D)
-    debug("Grid Reactive Power A: " + str(result) + "VA")
+    debug("Grid Apparent Power A: " + str(result) + "VA")
     return result
 
 
-def read_grid_reactive_power_b():
+def read_grid_apparent_power_b():
     result = instr.read_register(0x23E)
-    debug("Grid Reactive Power B: " + str(result) + "VA")
+    debug("Grid Apparent Power B: " + str(result) + "VA")
     return result
 
 
-def read_grid_reactive_power_c():
+def read_grid_apparent_power_c():
     result = instr.read_register(0x23F)
-    debug("Grid Reactive Power C: " + str(result) + "VA")
+    debug("Grid Apparent Power C: " + str(result) + "VA")
     return result
 
 
@@ -583,13 +543,13 @@ def read_pv_charging_current_limit():
     # TODO: check the documentation
     result = instr.read_register(0xE001)
     result = result / 10
-    debug("PV Charging Current Limit: " + str(result) + "A")
+    debug("Charging Current Limit: " + str(result) + "A")
     return result
 
 
 def write_pv_charging_current_limit(value):
     result = instr.write_register(0xE001, int(float(value) * 10))
-    debug("PV Charging Current Limit set to: " + str(value))
+    debug("Charging Current Limit set to: " + str(value))
     return result
 
 

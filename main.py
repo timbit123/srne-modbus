@@ -109,7 +109,11 @@ while True:
 
         debug(f"updating {name}")
         topic = f"{mqtt_topic}/{vals.get('topic_type', 'sensor')}/{name}/state"
-        value = vals["value"]()
+        if "args" in vals:  
+            vals["args"]["name"] = vals["config"]["name"]
+            value = vals["value"](**vals["args"])
+        else:
+            value = vals["value"]()
         mqtt_config[name]["last_update"] = current_time
         mqtt_config[name]["last_value"] = value
         publishing_queue.append((topic, value))
