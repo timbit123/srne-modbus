@@ -62,10 +62,13 @@ mqtt_set_config: dict[str, any] = {
     "charging/undervoltage_warning_voltage": modbus.write_battery_undervoltage_warning,
     "charging/discharge_limit_voltage": modbus.write_battery_discharge_limit_voltage,
     "charging/stop_discharge_soc_limit": modbus.write_battery_stop_state_of_charge,
+    "charging/stop_grid_discharge_soc_limit": modbus.write_battery_soc_switch_to_line,
+    "charging/restart_grid_discharge_soc_limit": modbus.write_battery_soc_switch_to_battery,
     "charging/stop_charging_soc_limit": modbus.write_stop_charging_soc_set,
     "charging/total_charging_current_limit": modbus.write_total_charging_current_limit,
     "inverter/power_saving": modbus.write_power_saving_mode,
-    "inverter/output_priority": modbus.write_output_priority,
+#    "inverter/output_priority": modbus.write_output_priority,
+    "inverter/hybrid_mode": modbus.write_hybrid_mode,
     "inverter/battery_priority": modbus.write_battery_discharge_enabled,
 }
 
@@ -1423,8 +1426,6 @@ mqtt_config: dict[str, dict[str, any]] = {
             "options": [
                 "Solar First",
                 "Utility First",
-                "Solar and Utility Simultaneously",
-                "Solar Only",
             ],
             "command_topic": "charging/source_priority",
         },
@@ -1540,6 +1541,40 @@ mqtt_config: dict[str, dict[str, any]] = {
             "mode:": "box"
         },
     },
+    "charging/stop_grid_discharge_soc_limit": {
+        "enabled": battery_enabled,
+        "value": modbus.read_battery_soc_switch_to_line,
+        "interval": battery_interval,
+        "last_update": None,
+        "topic_type": "number",
+        "config": {
+            "name": "Stop Load/Home Discharge Battery SOC",
+            "icon": "mdi:battery",
+            "unit_of_measurement": "%",
+            "min": 0,
+            "max": 100,
+            "step": 1,
+            "command_topic": "charging/stop_grid_discharge_soc_limit",
+            "mode:": "box"
+        },
+    },
+    "charging/restart_grid_discharge_soc_limit": {
+        "enabled": battery_enabled,
+        "value": modbus.read_battery_soc_switch_to_battery,
+        "interval": battery_interval,
+        "last_update": None,
+        "topic_type": "number",
+        "config": {
+            "name": "Restart Load/Home Discharge Battery SOC",
+            "icon": "mdi:battery",
+            "unit_of_measurement": "%",
+            "min": 0,
+            "max": 100,
+            "step": 1,
+            "command_topic": "charging/restart_grid_discharge_soc_limit",
+            "mode:": "box"
+        },
+    },
     "charging/stop_charging_soc_limit": {
         "enabled": battery_enabled,
         "value": modbus.read_stop_charging_soc_set,
@@ -1591,16 +1626,28 @@ mqtt_config: dict[str, dict[str, any]] = {
             "command_topic": "inverter/power_saving",
         },
     },
-    "inverter/output_priority": {
-        "value": modbus.read_output_priority,
+#    "inverter/output_priority": {
+#        "value": modbus.read_output_priority,
+#        "interval": general_interval,
+#        "last_update": None,
+#        "topic_type": "select",
+#        "config": {
+#            "name": "Output Priority",
+#            "icon": "mdi:export",
+#            "options": ["Solar First", "Utility First", "Solar/Battery/Utility"],
+#            "command_topic": "inverter/output_priority",
+#        },
+#    },
+   "inverter/hybrid_mode": {
+        "value": modbus.read_hybrid_mode,
         "interval": general_interval,
         "last_update": None,
         "topic_type": "select",
         "config": {
-            "name": "Output Priority",
+            "name": "Hybrid Grid Mode",
             "icon": "mdi:export",
-            "options": ["Solar First", "Utility First", "Solar/Battery/Utility"],
-            "command_topic": "inverter/output_priority",
+            "options": ["On Grid", "Limit Power to UPS", "Limit Power to Home"],
+            "command_topic": "inverter/hybrid_mode",
         },
     },
     "inverter/battery_priority": {
