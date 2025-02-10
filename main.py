@@ -92,6 +92,7 @@ general_interval: float = (
 
 # Loop continuously sending data to Home Assistant
 client.loop_start()
+force_update = True
 while True:
 
     for name, vals in mqtt_config.items():
@@ -101,7 +102,7 @@ while True:
         last_update = vals.get("last_update")
         interval = vals.get("interval")
         current_time = time.time()
-        if last_update is not None:
+        if last_update is not None and force_update is not True:
             if interval == -1:
                 continue
             if current_time - last_update <= interval:
@@ -118,6 +119,7 @@ while True:
         mqtt_config[name]["last_value"] = value
         publishing_queue.append((topic, value))
 
+    force_update = False
     time.sleep(loop_sleep)
 
     if len(publishing_queue) > 0:
@@ -129,6 +131,8 @@ while True:
     if len(writing_queue) > 0:
         for set_fuction, payload in writing_queue:
             set_fuction(payload)
+            #Force an update of all values, since some config items will affect multiple
+            force_update = True
         writing_queue = []
         time.sleep(0.1)
 
