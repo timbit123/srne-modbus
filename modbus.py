@@ -24,11 +24,10 @@ def debug(msg):
 ############ Generic Register Functions #####################
 
 def read_register_str(register:int, name:str, clean:bool = False, prefix:str = ""):
-    result = ""
     try:
       result = instr.read_string(register, 20)
     except:
-      pass
+      return None
     if clean:
         result = "".join([char for char in result if char != "\x00"])
     result = prefix + result
@@ -36,11 +35,10 @@ def read_register_str(register:int, name:str, clean:bool = False, prefix:str = "
     return result
 
 def read_register_value(register:int, name:str, unit:str = "", scale:float = 1.0, prefix:str = "", integer:bool = False, format_str:str ="{:.2f}"):
-    result = 0
     try:
       result = instr.read_register(register)
     except:
-      pass
+      return None
     result = float(result) * scale
     if integer:
         format_str = "{:d}" if format_str == "{:.2f}" else format_str
@@ -54,43 +52,39 @@ def read_register_value(register:int, name:str, unit:str = "", scale:float = 1.0
 
 ############ Battery #####################
 def read_battery_soc():
-    result = 0
     try:
       result = instr.read_register(0x100)
     except:
-      pass
+      return None
     debug("Battery SOC: " + str(result) + "%")
     return result
 
 
 def read_battery_voltage():
-    result = 0
     try:
       result = instr.read_register(0x101)
     except:
-      pass
+      return None
     result = result / 10
     debug("Battery Voltage: " + str(result) + "V")
     return result
 
 
 def read_battery_current():
-    result = 0
     try:
       result = instr.read_register(0x102, signed=True)
     except:
-      pass
+      return None
     result = result / 10
     debug("Battery Current: " + str(result) + "A")
     return result
 
 
 def read_battery_temperature():
-    result = 0
     try:
       result = instr.read_register(0x103, signed=True)
     except:
-      pass
+      return None
     result = result / 10
     debug("Battery Temperature: " + str(result) + "°C")
     return result
@@ -98,43 +92,39 @@ def read_battery_temperature():
 
 ############## PV #########################
 def read_pv1_voltage():
-    result = 0
     try:
       result = instr.read_register(0x107)
     except:
-      pass
+      return None
     result = result / 10
     debug("PV1 Voltage: " + str(result) + "V")
     return result
 
 
 def read_pv1_current():
-    result = 0
     try:
       result = instr.read_register(0x108)
     except:
-      pass
+      return None
     result = result / 10
     debug("PV1 Current: " + str(result) + "A")
     return result
 
 
 def read_pv1_charge_power():
-    result = 0
     try:
       result = instr.read_register(0x109)
     except:
-      pass
+      return None
     debug("PV1 Charge Power: " + str(result) + "W")
     return result
 
 
 def read_pv_total_power():
-    result = 0
     try:
       result = instr.read_register(0x10A)
     except:
-      pass
+      return None
     debug("PV Total Power: " + str(result) + "W")
     return result
 
@@ -144,7 +134,7 @@ def read_charging_state():
     try:
       key = int(instr.read_register(0x010B))
     except:
-      pass
+      return None
     charging_states = {
         0: "Not Charging",
         1: "Quick Charge",
@@ -164,43 +154,39 @@ def read_charging_state():
 
 def read_charging_power():
     # PV charging power + AC charging power
-    result = 0
     try:
       result = instr.read_register(0x10E)
     except:
-      pass
+      return None
     debug("Charging Power: " + str(result) + "W")
     return result
 
 
 def read_pv2_voltage():
-    result = 0
     try:
       result = instr.read_register(0x10F)
     except:
-      pass
+      return None
     result = result / 10
     debug("PV2 Voltage: " + str(result) + "V")
     return result
 
 
 def read_pv2_current():
-    result = 0
     try:
       result = instr.read_register(0x110)
     except:
-      pass
+      return None
     result = result / 10
     debug("PV2 Current: " + str(result) + "A")
     return result
 
 
 def read_pv2_charge_power():
-    result = 0
     try:
       result = instr.read_register(0x111)
     except:
-      pass
+      return None
     debug("PV2 Charge Power: " + str(result) + "W")
     return result
 
@@ -209,11 +195,10 @@ def read_pv2_charge_power():
 
 
 def read_system_date_time():
-    result = 0
     try:
       results = instr.read_registers(0x20C, 3)
     except:
-      pass
+      return None
     year = (results[0] >> 8) & 0xFF  # high byte
     month = results[0] & 0xFF  # Low byte
     day = (results[1] >> 8) & 0xFF  # high byte
@@ -248,16 +233,15 @@ def write_system_date_time():
     try:
         instr.write_registers(0x20C, data)
     except:
-        pass
+        return None
     debug(f"System Date/Time: {now.strftime('%Y-%m-%d %H:%M:%S')}")
 
 
 def read_grid_on_remain_time_state():
-    result = 0
     try:
       result = instr.read_register(0x20F)
     except:
-      pass
+      return None
     debug("Grid On/Remain Time State:", result)
     return result
 
@@ -267,7 +251,7 @@ def read_machine_state():
     try:
       key = int(instr.read_register(0x210))
     except:
-      pass
+      return None
     machine_states = {
         0: "Initialization",
         1: "Standby state",
@@ -285,164 +269,149 @@ def read_machine_state():
 
 
 def read_bus_voltage():
-    result = 0
     try:
       result = instr.read_register(0x212)
     except:
-      pass
+      return None
     result = result / 10
     debug("Bus Voltage: " + str(result) + "V")
     return result
 
 
 def read_grid_voltage_a():
-    result = 0
     try:
       result = instr.read_register(0x213)
     except:
-      pass
+      return None
     result = result / 10
     debug("Grid Voltage A: " + str(result) + "V")
     return result
 
 
 def read_grid_current_a():
-    result = 0
     try:
       result = instr.read_register(0x214)
     except:
-      pass
+      return None
     result = result / 10
     debug("Grid Current A: " + str(result) + "A")
     return result
 
 
 def read_grid_frequency():
-    result = 0
     try:
       result = instr.read_register(0x215)
     except:
-      pass
+      return None
     result = result / 100
     debug("Grid Frequency: " + str(result) + "Hz")
     return result
 
 
 def read_inverter_voltage_a():
-    result = 0
     try:
       result = instr.read_register(0x216)
     except:
-      pass
+      return None
     result = result / 10
     debug("Inverter Voltage A: " + str(result) + "V")
     return result
 
 
 def read_inverter_current_a():
-    result = 0
     try:
       result = instr.read_register(0x217)
     except:
-      pass
+      return None
     result = result / 10
     debug("Inverter Current A: " + str(result) + "A")
     return result
 
 
 def read_inverter_frequency():
-    result = 0
     try:
       result = instr.read_register(0x218)
     except:
-      pass
+      return None
     result = result / 100
     debug("Inverter Frequency: " + str(result) + "Hz")
     return result
 
 
 def read_load_current_a():
-    result = 0
     try:
       result = instr.read_register(0x219)
     except:
-      pass
+      return None
     result = result / 10
     debug("Load Current A: " + str(result) + "A")
     return result
 
 
 def read_load_active_power_a():
-    result = 0
     try:
       result = instr.read_register(0x21B)
     except:
-      pass
+      return None
     result = result
     debug("Load Active Power A: " + str(result) + "W")
     return result
 
 
 def read_load_apparent_power_a():
-    result = 0
     try:
       result = instr.read_register(0x21C)
     except:
-      pass
+      return None
     result = result
     debug("Load Apparent Power VA: " + str(result) + "VA")
     return result
 
 
 def read_grid_charging_current():
-    result = 0
     try:
       result = instr.read_register(0x21E)
     except:
-      pass
+      return None
     result = result / 10
     debug("Grid Charging Current: " + str(result) + "A")
     return result
 
 
 def read_load_ratio_a():
-    result = 0
     try:
       result = instr.read_register(0x21F)
     except:
-      pass
+      return None
     debug("Load Ratio A: " + str(result) + "%")
     return result
 
 
 def read_temperature_dc_dc():
-    result = 0
     try:
       result = instr.read_register(0x220, signed=True)
     except:
-      pass
+      return None
     result = result / 10
     debug("Temperature DC-DC: " + str(result) + "C")
     return result
 
 
 def read_temperature_dc_ac():
-    result = 0
     try:
       result = instr.read_register(0x221, signed=True)
     except:
-      pass
+      return None
     result = result / 10
     debug("Temperature DC-AC: " + str(result) + "C")
     return result
 
 
 def read_temperature_transformer():
-    result = 0
     try:
       result = instr.read_register(0x222, signed=True)
     except:
-      pass
+      return None
     result = result / 10
     debug("Temperature Transformer: " + str(result) + "C")
     return result
@@ -450,225 +419,204 @@ def read_temperature_transformer():
 
 def read_temperature_ambient():
     # Sensor not always available
-    result = 0
     try:
       result = instr.read_register(0x223, signed=True)
     except:
-      pass
+      return None
     result = result / 10
     debug("Temperature Ambient: " + str(result) + "C")
     return result
 
 
 def read_pv_charging_current():
-    result = 0
     try:
       result = instr.read_register(0x224)
     except:
-      pass
+      return None
     result = result / 10
     debug("PV Charging Current: " + str(result) + "A")
     return result
 
 
 def read_parallel_load_avg_current():
-    result = 0
     try:
       result = instr.read_register(0x225)
     except:
-      pass
+      return None
     result = result / 10
     debug("Parallel Load Avg Current: " + str(result) + "A")
     return result
 
 
 def read_pbus_voltage():
-    result = 0
     try:
       result = instr.read_register(0x228)
     except:
-      pass
+      return None
     result = result / 10
     debug("PBus Voltage: " + str(result) + "V")
     return result
 
 
 def read_nbus_voltage():
-    result = 0
     try:
       result = instr.read_register(0x229)
     except:
-      pass
+      return None
     result = result / 10
     debug("NBus Voltage: " + str(result) + "V")
     return result
 
 
 def read_grid_voltage_b():
-    result = 0
     try:
       result = instr.read_register(0x22A)
     except:
-      pass
+      return None
     result = result / 10
     debug("Grid Voltage B: " + str(result) + "V")
     return result
 
 
 def read_grid_voltage_c():
-    result = 0
     try:
       result = instr.read_register(0x22B)
     except:
-      pass
+      return None
     result = result / 10
     debug("Grid Voltage C: " + str(result) + "V")
     return result
 
 
 def read_inverter_voltage_b():
-    result = 0
     try:
       result = instr.read_register(0x22C)
     except:
-      pass
+      return None
     result = result / 10
     debug("Inverter Voltage B: " + str(result) + "V")
     return result
 
 
 def read_inverter_voltage_c():
-    result = 0
     try:
       result = instr.read_register(0x22D)
     except:
-      pass
+      return None
     result = result / 10
     debug("Inverter Voltage C: " + str(result) + "V")
     return result
 
 
 def read_inverter_current_b():
-    result = 0
     try:
       result = instr.read_register(0x22E)
     except:
-      pass
+      return None
     result = result / 10
     debug("Inverter Current B: " + str(result) + "A")
     return result
 
 
 def read_inverter_current_c():
-    result = 0
     try:
       result = instr.read_register(0x22F)
     except:
-      pass
+      return None
     result = result / 10
     debug("Inverter Current C: " + str(result) + "A")
     return result
 
 
 def read_load_current_b():
-    result = 0
     try:
       result = instr.read_register(0x230)
     except:
-      pass
+      return None
     result = result / 10
     debug("Load Current B: " + str(result) + "A")
     return result
 
 
 def read_load_current_c():
-    result = 0
     try:
       result = instr.read_register(0x231)
     except:
-      pass
+      return None
     result = result / 10
     debug("Load Current C: " + str(result) + "A")
     return result
 
 
 def read_load_active_power_b():
-    result = 0
     try:
       result = instr.read_register(0x232)
     except:
-      pass
+      return None
     debug("Load Active Power B: " + str(result) + "W")
     return result
 
 
 def read_load_active_power_c():
-    result = 0
     try:
       result = instr.read_register(0x233)
     except:
-      pass
+      return None
     debug("Load Active Power C: " + str(result) + "W")
     return result
 
 
 def read_load_apparent_power_b():
-    result = 0
     try:
       result = instr.read_register(0x234)
     except:
-      pass
+      return None
     debug("Load Apparent Power B: " + str(result) + "VA")
     return result
 
 
 def read_load_apparent_power_c():
-    result = 0
     try:
       result = instr.read_register(0x235)
     except:
-      pass
+      return None
     debug("Load Apparent Power C: " + str(result) + "VA")
     return result
 
 
 def read_load_ratio_b():
-    result = 0
     try:
       result = instr.read_register(0x236)
     except:
-      pass
+      return None
     debug("Load Ratio B: " + str(result) + "%")
     return result
 
 
 def read_load_ratio_c():
-    result = 0
     try:
       result = instr.read_register(0x237)
     except:
-      pass
+      return None
     debug("Load Ratio C: " + str(result) + "%")
     return result
 
 
 def read_grid_current_b():
-    result = 0
     try:
       result = instr.read_register(0x238)
     except:
-      pass
+      return None
     result = result / 10
     debug("Grid Current B: " + str(result) + "A")
     return result
 
 
 def read_grid_current_c():
-    result = 0
     try:
       result = instr.read_register(0x239)
     except:
-      pass
+      return None
     result = result / 10
     debug("Grid Current C: " + str(result) + "A")
     return result
@@ -678,11 +626,10 @@ def read_grid_active_power_a():
     # keep consistent with battery power convention
     # positive value when inverter is consuming power from the grid
     # negative value when inverter is exporting power to the grid
-    result = 0
     try:
       result = -instr.read_register(0x23A, signed=True)
     except:
-      pass
+      return None
     debug("Grid Active Power A: " + str(result) + "W")
     return result
 
@@ -691,11 +638,10 @@ def read_grid_active_power_b():
     # keep consistent with battery power convention
     # positive value when inverter is consuming power from the grid
     # negative value when inverter is exporting power to the grid
-    result = 0
     try:
       result = -instr.read_register(0x23B, signed=True)
     except:
-      pass
+      return None
     debug("Grid Active Power B: " + str(result) + "W")
     return result
 
@@ -704,41 +650,37 @@ def read_grid_active_power_c():
     # keep consistent with battery power convention
     # positive value when inverter is consuming power from the grid
     # negative value when inverter is exporting power to the grid
-    result = 0
     try:
       result = -instr.read_register(0x23C, signed=True)
     except:
-      pass
+      return None
     debug("Grid Active Power C: " + str(result) + "W")
     return result
 
 
 def read_grid_apparent_power_a():
-    result = 0
     try:
       result = instr.read_register(0x23D)
     except:
-      pass
+      return None
     debug("Grid Apparent Power A: " + str(result) + "VA")
     return result
 
 
 def read_grid_apparent_power_b():
-    result = 0
     try:
       result = instr.read_register(0x23E)
     except:
-      pass
+      return None
     debug("Grid Apparent Power B: " + str(result) + "VA")
     return result
 
 
 def read_grid_apparent_power_c():
-    result = 0
     try:
       result = instr.read_register(0x23F)
     except:
-      pass
+      return None
     debug("Grid Apparent Power C: " + str(result) + "VA")
     return result
 
@@ -751,7 +693,7 @@ def write_power_off_on(value):
     try:
         instr.write_register(0xDF00, int(value))
     except:
-        pass
+        return None
     debug("Power " + ("Off" if value == 0 else "On"))
 
 
@@ -760,7 +702,7 @@ def write_reset(value):
     try:
         instr.write_register(0xDF01, int(value))
     except:
-        pass
+        return None
     debug("Reset")
 
 
@@ -773,19 +715,19 @@ def write_restore_factory_setting(value):
         try:
             instr.write_register(0xDF02, 0xAA)
         except:
-            pass
+            return None
         debug("Restore Factory Setting")
     elif value == "2":
         try:
             instr.write_register(0xDF02, 0xBB)
         except:
-            pass
+            return None
         debug("Clear statistics")
     elif value == "3":
         try:
             instr.write_register(0xDF02, 0xCC)
         except:
-            pass
+            return None
         debug("Clear errors")
 
 
@@ -793,7 +735,7 @@ def write_battery_equal_charging_immediately(value):
     try:
         instr.write_register(0xDF0D, int(value))
     except:
-        pass
+        return None
     debug("Battery Equal Charging Immediately: " + str(value))
 
 
@@ -801,11 +743,10 @@ def write_battery_equal_charging_immediately(value):
 def read_pv_charging_current_limit():
     # documentation says max 150A but mine returned 200A...
     # TODO: check the documentation
-    result = 0
     try:
       result = instr.read_register(0xE001)
     except:
-      pass
+      return None
     result = result / 10
     debug("Charging Current Limit: " + str(result) + "A")
     return result
@@ -815,7 +756,7 @@ def write_pv_charging_current_limit(value):
     try:
         result = instr.write_register(0xE001, int(float(value) * 10))
     except:
-        pass
+        return None
     debug("Charging Current Limit set to: " + str(value))
     return result
 
@@ -824,21 +765,19 @@ def read_battery_rate_voltage():
     # not sure why you would chnge this value though
     # most inverter cannot do all voltages 12v/24V/36v/48v
     # This data need to be pulled on start to configure other configuration
-    result = 0
     try:
       result = instr.read_register(0xE003)
     except:
-      pass
+      return None
     debug("Battery Rate Voltage: " + str(result) + "V")
     return result
 
 
 def read_battery_type_set():
-    result = 0
     try:
       result = instr.read_register(0xE004)
     except:
-      pass
+      return None
     battery_types = {
         0: "User defined",
         1: "SLD",
@@ -870,7 +809,7 @@ def write_battery_type_set(value: str):
     try:
         instr.write_register(0xE004, int(value))
     except:
-        pass
+        return None
 
 
 ## TODO: maybe at some point we want to init and pull this before anything else
@@ -878,11 +817,10 @@ battery_rate: float = read_battery_rate_voltage() / 12
 
 
 def read_battery_overvoltage_protection_voltage():
-    result = 0
     try:
       result = instr.read_register(0xE005)
     except:
-      pass
+      return None
     result = (result / 10) * battery_rate
     debug("Battery Overcharge Protection Voltage: " + str(result) + "V")
     return result
@@ -894,15 +832,14 @@ def write_battery_overvoltage_protection_voltage(value: str):
     try:
         instr.write_register(0xE005, value)
     except:
-        pass
+        return None
 
 
 def read_battery_charge_limit_voltage():
-    result = 0
     try:
       result = instr.read_register(0xE006)
     except:
-      pass
+      return None
     result = (result / 10) * battery_rate
     debug("Battery Charge Limit Voltage: " + str(result) + "V")
     return result
@@ -915,15 +852,14 @@ def write_battery_charge_limit_voltage(value: str):
     try:
         instr.write_register(0xE006, value)
     except:
-        pass
+        return None
 
 
 def read_battery_equalization_voltage():
-    result = 0
     try:
       result = instr.read_register(0xE007)
     except:
-      pass
+      return None
     result = (result / 10) * battery_rate
     debug("Battery Charge Equalization Voltage: " + str(result) + "V")
     return result
@@ -936,15 +872,14 @@ def write_battery_equalization_voltage(value: str):
     try:
         instr.write_register(0xE007, value)
     except:
-        pass
+        return None
 
 
 def read_battery_bulk_voltage():
-    result = 0
     try:
       result = instr.read_register(0xE008)
     except:
-      pass
+      return None
     result = (result / 10) * battery_rate
     debug("Battery Bulk Voltage: " + str(result) + "V")
     return result
@@ -957,15 +892,14 @@ def write_battery_bulk_voltage(value: str):
     try:
         instr.write_register(0xE008, value)
     except:
-        pass
+        return None
 
 
 def read_battery_float_charge_voltage():
-    result = 0
     try:
       result = instr.read_register(0xE009)
     except:
-      pass
+      return None
     result = (result / 10) * battery_rate
     debug("Battery Float Charge Voltage: " + str(result) + "V")
     return result
@@ -978,15 +912,14 @@ def write_battery_float_charge_voltage(value: str):
     try:
         instr.write_register(0xE009, value)
     except:
-        pass
+        return None
 
 
 def read_battery_rebulk_voltage():
-    result = 0
     try:
       result = instr.read_register(0xE00A)
     except:
-      pass
+      return None
     result = (result / 10) * battery_rate
     debug("Battery ReBulk Voltage: " + str(result) + "V")
     return result
@@ -999,15 +932,14 @@ def write_battery_rebulk_voltage(value: str):
     try:
         instr.write_register(0xE00A, value)
     except:
-        pass
+        return None
 
 
 def read_battery_overdischarge_return_voltage():
-    result = 0
     try:
       result = instr.read_register(0xE00B)
     except:
-      pass
+      return None
     result = (result / 10) * battery_rate
     debug("Battery Overdischarge Return Voltage: " + str(result) + "V")
     return result
@@ -1020,15 +952,14 @@ def write_battery_overdischarge_return_voltage(value: str):
     try:
         instr.write_register(0xE00B, value)
     except:
-        pass
+        return None
 
 
 def read_battery_undervoltage_warning():
-    result = 0
     try:
       result = instr.read_register(0xE00C)
     except:
-      pass
+      return None
     result = (result / 10) * battery_rate
     debug("Battery Undervoltage Warning Voltage: " + str(result) + "V")
     return result
@@ -1041,15 +972,14 @@ def write_battery_undervoltage_warning(value: str):
     try:
         instr.write_register(0xE00C, value)
     except:
-        pass
+        return None
 
 
 def read_battery_overdischarge_limit():
-    result = 0
     try:
       result = instr.read_register(0xE00D)
     except:
-      pass
+      return None
     result = (result / 10) * battery_rate
     debug("Battery Overdischarge Warning Voltage: " + str(result) + "V")
     return result
@@ -1062,15 +992,14 @@ def write_battery_overdischarge_limit(value: str):
     try:
         instr.write_register(0xE00D, value)
     except:
-        pass
+        return None
 
 
 def read_battery_discharge_limit_voltage():
-    result = 0
     try:
       result = instr.read_register(0xE00E)
     except:
-      pass
+      return None
     result = (result / 10) * battery_rate
     debug("Battery Discharge Limit Voltage: " + str(result) + "V")
     return result
@@ -1083,15 +1012,14 @@ def write_battery_discharge_limit_voltage(value: str):
     try:
         instr.write_register(0xE00E, value)
     except:
-        pass
+        return None
 
 
 def read_battery_stop_state_of_charge():
-    result = 0
     try:
       result = instr.read_register(0xE00F)
     except:
-      pass
+      return None
     debug("Battery Stop State of Charge Voltage: " + str(result) + "%")
     return result
 
@@ -1102,15 +1030,14 @@ def write_battery_stop_state_of_charge(value: str):
     try:
         instr.write_register(0xE00F, int(value))
     except:
-        pass
+        return None
 
 
 def read_battery_overdischarge_delay_time():
-    result = 0
     try:
       result = instr.read_register(0xE010)
     except:
-      pass
+      return None
     debug("Battery Overdischarge Delay Time: " + str(result) + "s")
     return result
 
@@ -1121,15 +1048,14 @@ def write_battery_overdischarge_delay_time(value: str):
     try:
         instr.write_register(0xE010, int(value))
     except:
-        pass
+        return None
 
 
 def read_battery_equalization_charge_time():
-    result = 0
     try:
       result = instr.read_register(0xE011)
     except:
-      pass
+      return None
     debug("Battery Equalization Charge Time: " + str(result) + "min")
     return result
 
@@ -1140,15 +1066,14 @@ def write_battery_equalization_charge_time(value: str):
     try:
         instr.write_register(0xE011, int(value))
     except:
-        pass
+        return None
 
 
 def read_battery_bulk_charge_time():
-    result = 0
     try:
       result = instr.read_register(0xE012)
     except:
-      pass
+      return None
     debug("Battery Bulk Charge Time: " + str(result) + "min")
     return result
 
@@ -1159,15 +1084,14 @@ def write_battery_bulk_charge_time(value: str):
     try:
         instr.write_register(0xE012, int(value))
     except:
-        pass
+        return None
 
 
 def read_battery_equalization_charge_interval():
-    result = 0
     try:
       result = instr.read_register(0xE013)
     except:
-      pass
+      return None
     debug("Battery Equalization Charge Interval: " + str(result) + "days")
     return result
 
@@ -1176,15 +1100,14 @@ def write_battery_equalization_charge_interval(value: str):
     try:
         instr.write_register(0xE013, int(value))
     except:
-        pass
+        return None
 
 
 def read_battery_dc_switch_low_voltage():
-    result = 0
     try:
       result = instr.read_register(0xE01B)
     except:
-      pass
+      return None
     result = (result / 10) * battery_rate
     debug("Battery Switch Load to AC when low voltage: " + str(result) + "V")
     return result
@@ -1195,18 +1118,17 @@ def write_battery_dc_switch_low_voltage(value: str):
     try:
         instr.write_register(0xE01B, int(value))
     except:
-        pass
+        return None
 
 
 def read_stop_charging_current_limit():
     """
     Only the lithium battery is effective, and when the current of constant-voltage charging state is lower than this value, the charging is stopped.
     """
-    result = 0
     try:
       result = instr.read_register(0xE01C)
     except:
-      pass
+      return None
     result = result / 10
     debug("Stop charging when current below: " + str(result) + "A")
     return result
@@ -1217,18 +1139,17 @@ def write_stop_charging_current_limit(value: str):
     try:
         instr.write_register(0xE01C, int(value))
     except:
-        pass
+        return None
 
 
 def read_stop_charging_soc_set():
     """
     When the SOC capacity is greater than or equal to this value, charging is stopped, and it is valid for BMS communication.
     """
-    result = 0
     try:
       result = instr.read_register(0xE01D)
     except:
-      pass
+      return None
     debug("Stop Charging SOC Set: " + str(result) + "%")
     return result
 
@@ -1237,15 +1158,14 @@ def write_stop_charging_soc_set(value: str):
     try:
         instr.write_register(0xE01D, int(value))
     except:
-        pass
+        return None
 
 
 def read_battery_soc_low_alarm():
-    result = 0
     try:
       result = instr.read_register(0xE01E)
     except:
-      pass
+      return None
     debug("Battery SOC Low Alarm: " + str(result) + "%")
     return result
 
@@ -1254,15 +1174,14 @@ def write_battery_soc_low_alarm(value: str):
     try: 
         instr.write_register(0xE01E, int(value))
     except:
-        pass
+        return None
 
 
 def read_battery_soc_switch_to_line():
-    result = 0
     try:
       result = instr.read_register(0xE01F)
     except:
-      pass
+      return None
     debug("Battery SOC Switch load to AC when below: " + str(result) + "%")
     return result
 
@@ -1271,15 +1190,14 @@ def write_battery_soc_switch_to_line(value: str):
     try:
         instr.write_register(0xE01F, int(value))
     except:
-        pass
+        return None
 
 
 def read_battery_soc_switch_to_battery():
-    result = 0
     try:
       result = instr.read_register(0xE020)
     except:
-      pass
+      return None
     debug("Battery SOC Switch back to Battery: " + str(result) + "%")
     return result
 
@@ -1288,18 +1206,17 @@ def write_battery_soc_switch_to_battery(value: str):
     try: 
         instr.write_register(0xE020, int(value))
     except:
-        pass
+        return None
 
 
 def read_battery_voltage_switch_to_inverter():
     """
     When the battery voltage is higher than the judged point, the inverter is switched back.
     """
-    result = 0
     try:
       result = instr.read_register(0xE022)
     except:
-      pass
+      return None
     result = (result / 10) * battery_rate
     debug("Battery Voltage Switch to Inverter: " + str(result) + "V")
     return result
@@ -1310,15 +1227,14 @@ def write_battery_voltage_switch_to_inverter(value: str):
     try:
         instr.write_register(0xE022, int(value))
     except:
-        pass
+        return None
 
 
 def read_battery_equalization_charge_timeout():
-    result = 0
     try:
       result = instr.read_register(0xE023)
     except:
-      pass
+      return None
     debug("Battery Equalization Charge Timeout: " + str(result) + "min")
     return result
 
@@ -1330,15 +1246,14 @@ def write_battery_equalization_charge_timeout(value: str):
     try:
         instr.write_register(0xE023, int(value))
     except:
-        pass
+        return None
 
 
 def read_lithium_battery_active_current_set():
-    result = 0
     try:
       result = instr.read_register(0xE024)
     except:
-      pass
+      return None
     result = result / 10
     debug("Lithium Battery Active Current Set: " + str(result) + "A")
     return result
@@ -1349,7 +1264,7 @@ def write_lithium_battery_active_current_set(value: str):
     try:
         instr.write_register(0xE024, int(value))
     except:
-        pass
+        return None
 
 
 def read_bms_charging_limit_current_mode_setting():
@@ -1359,11 +1274,10 @@ def read_bms_charging_limit_current_mode_setting():
     1: BMS protocol
     2: Inverter logic
     """
-    result = 0
     try:
       result = instr.read_register(0xE025)
     except:
-      pass
+      return None
     debug("BMS Charging Limit Current Mode: " + str(result))
     return result
 
@@ -1372,17 +1286,16 @@ def write_bms_charging_limit_current_mode_setting(value):
     try:
         instr.write_register(0xE025, int(value))
     except:
-        pass
+        return None
     debug("BMS Charging Limit Current Mode: " + str(value))
 
 
 def read_charge_start_time_1():
     # Hours and minutes: 23h*256+59min=5,947
-    result = 0
     try:
       result = instr.read_register(0xE026)
     except:
-      pass
+      return None
     ## extract hours and minutes from the register value
     hours = (result & 0xFF00) >> 8
     minutes = result & 0x00FF
@@ -1399,16 +1312,15 @@ def write_charge_start_time_1(value: str):
     try:
         instr.write_register(0xE026, combined)
     except:
-        pass
+        return None
     debug("Charge Start Time 1 set to " + str(hours) + "h" + str(minutes) + "min")
 
 
 def read_charge_end_time_1():
-    result = 0
     try:
       result = instr.read_register(0xE027)
     except:
-      pass
+      return None
     hours = (result & 0xFF00) >> 8
     minutes = result & 0x00FF
     debug("Charge End Time 1: " + str(hours) + "h" + str(minutes) + "min")
@@ -1421,16 +1333,15 @@ def write_charge_end_time_1(value: str):
     try:
         instr.write_register(0xE027, combined)
     except:
-        pass
+        return None
     debug("Charge End Time 1 set to " + str(hours) + "h" + str(minutes) + "min")
 
 
 def read_charge_start_time_2():
-    result = 0
     try:
       result = instr.read_register(0xE028)
     except:
-      pass
+      return None
     hours = (result & 0xFF00) >> 8
     minutes = result & 0x00FF
     debug("Charge Start Time 2: " + str(hours) + "h" + str(minutes) + "min")
@@ -1443,16 +1354,15 @@ def write_charge_start_time_2(value: str):
     try:
         instr.write_register(0xE028, combined)
     except:
-        pass
+        return None
     debug("Charge Start Time 2 set to " + str(hours) + "h" + str(minutes) + "min")
 
 
 def read_charge_end_time_2():
-    result = 0
     try:
       result = instr.read_register(0xE029)
     except:
-      pass
+      return None
     hours = (result & 0xFF00) >> 8
     minutes = result & 0x00FF
     debug("Charge End Time 2: " + str(hours) + "h" + str(minutes) + "min")
@@ -1465,16 +1375,15 @@ def write_charge_end_time_2(value: str):
     try:
         instr.write_register(0xE029, combined)
     except:
-        pass
+        return None
     debug("Charge End Time 2 set to " + str(hours) + "h" + str(minutes) + "min")
 
 
 def read_charge_start_time_3():
-    result = 0
     try:
       result = instr.read_register(0xE02A)
     except:
-      pass
+      return None
     hours = (result & 0xFF00) >> 8
     minutes = result & 0x00FF
     debug("Charge Start Time 3: " + str(hours) + "h" + str(minutes) + "min")
@@ -1487,16 +1396,15 @@ def write_charge_start_time_3(value: str):
     try:
         instr.write_register(0xE02A, combined)
     except:
-        pass
+        return None
     debug("Charge Start Time 3 set to " + str(hours) + "h" + str(minutes) + "min")
 
 
 def read_charge_end_time_3():
-    result = 0
     try:
       result = instr.read_register(0xE02B)
     except:
-      pass
+      return None
     hours = (result & 0xFF00) >> 8
     minutes = result & 0x00FF
     debug("Charge End Time 3: " + str(hours) + "h" + str(minutes) + "min")
@@ -1509,17 +1417,16 @@ def write_charge_end_time_3(value: str):
     try:
         instr.write_register(0xE02B, combined)
     except:
-        pass
+        return None
     debug("Charge End Time 3 set to " + str(hours) + "h" + str(minutes) + "min")
 
 
 def read_time_charge_enabled():
     # 0:Disabled, 1:Enabled
-    result = 0
     try:
       result = instr.read_register(0xE02C)
     except:
-      pass
+      return None
     enabled = "Enabled" if int(result) else "Disabled"
     debug("Charge Time Enabled: " + enabled)
     return enabled
@@ -1534,15 +1441,14 @@ def write_time_charge_enabled(value: str):
         try:
             instr.write_register(0xE02C, int_value)
         except:
-            pass
+            return None
 
 def read_discharge_start_time_1():
     # Hours and minutes: 23h*256+59min=5,947
-    result = 0
     try:
       result = instr.read_register(0xE02D)
     except:
-      pass
+      return None
     ## extract hours and minutes from the register value
     hours = (result & 0xFF00) >> 8
     minutes = result & 0x00FF
@@ -1559,16 +1465,15 @@ def write_discharge_start_time_1(value: str):
     try:
         instr.write_register(0xE02D, combined)
     except:
-        pass
+        return None
     debug("Discharge Start Time 1 set to " + str(hours) + "h" + str(minutes) + "min")
 
 
 def read_discharge_end_time_1():
-    result = 0
     try:
       result = instr.read_register(0xE02E)
     except:
-      pass
+      return None
     hours = (result & 0xFF00) >> 8
     minutes = result & 0x00FF
     debug("Discharge End Time 1: " + str(hours) + "h" + str(minutes) + "min")
@@ -1581,16 +1486,15 @@ def write_discharge_end_time_1(value: str):
     try:
         instr.write_register(0xE02E, combined)
     except:
-        pass
+        return None
     debug("Discharge End Time 1 set to " + str(hours) + "h" + str(minutes) + "min")
 
 
 def read_discharge_start_time_2():
-    result = 0
     try:
       result = instr.read_register(0xE02F)
     except:
-      pass
+      return None
     hours = (result & 0xFF00) >> 8
     minutes = result & 0x00FF
     debug("Discharge Start Time 2: " + str(hours) + "h" + str(minutes) + "min")
@@ -1603,16 +1507,15 @@ def write_discharge_start_time_2(value: str):
     try:
         instr.write_register(0xE02F, combined)
     except:
-        pass
+        return None
     debug("Discharge Start Time 2 set to " + str(hours) + "h" + str(minutes) + "min")
 
 
 def read_discharge_end_time_2():
-    result = 0
     try:
       result = instr.read_register(0xE030)
     except:
-      pass
+      return None
     hours = (result & 0xFF00) >> 8
     minutes = result & 0x00FF
     debug("Discharge End Time 2: " + str(hours) + "h" + str(minutes) + "min")
@@ -1625,16 +1528,15 @@ def write_discharge_end_time_2(value: str):
     try:
         instr.write_register(0xE030, combined)
     except:
-        pass
+        return None
     debug("Discharge End Time 2 set to " + str(hours) + "h" + str(minutes) + "min")
 
 
 def read_discharge_start_time_3():
-    result = 0
     try:
       result = instr.read_register(0xE031)
     except:
-      pass
+      return None
     hours = (result & 0xFF00) >> 8
     minutes = result & 0x00FF
     debug("Discharge Start Time 3: " + str(hours) + "h" + str(minutes) + "min")
@@ -1647,16 +1549,15 @@ def write_discharge_start_time_3(value: str):
     try:
         instr.write_register(0xE031, combined)
     except:
-        pass
+        return None
     debug("Discharge Start Time 3 set to " + str(hours) + "h" + str(minutes) + "min")
 
 
 def read_discharge_end_time_3():
-    result = 0
     try:
       result = instr.read_register(0xE032)
     except:
-      pass
+      return None
     hours = (result & 0xFF00) >> 8
     minutes = result & 0x00FF
     debug("Discharge End Time 3: " + str(hours) + "h" + str(minutes) + "min")
@@ -1669,27 +1570,25 @@ def write_discharge_end_time_3(value: str):
     try:
         instr.write_register(0xE032, combined)
     except:
-        pass
+        return None
     debug("Discharge End Time 3 set to " + str(hours) + "h" + str(minutes) + "min")
 
 
 def read_time_discharge_enabled():
     # 0:Disabled, 1:Enabled
-    result = 0
     try:
       result = instr.read_register(0xE033)
     except:
-      pass
+      return None
     debug("Charge Time Enabled: " + str(result))
     return result
 
 
 def read_pv_power_priority_set():
-    result = 0
     try:
       result = instr.read_register(0xE039)
     except:
-      pass
+      return None
     priority_mode = {0: "Load Priority", 1: "Charging Priority", 2: "Grid Priority"}
     if result in priority_mode: 
         debug("PV Priority Mode: " + priority_mode[result])
@@ -1709,21 +1608,19 @@ def write_pv_power_priority_set(value: str):
 
 #################### P07 User Setting Area for Inverter Parameters ##################
 def read_rs485_address_set():
-    result = 0
     try:
       result = instr.read_register(0xE200)
     except:
-      pass
+      return None
     debug(f"RS-485 Address Set: {result}")
     return result
 
 
 def read_parallel_mode():
-    result = 0
     try:
       result = instr.read_register(0xE201)
     except:
-      pass
+      return None
     parallel_mode = {
         0: "Single machine",
         1: "Single-phase parallel",
@@ -1742,15 +1639,14 @@ def write_parallel_mode(value: str):
     try:
         instr.write_register(0xE201, int(value))
     except:
-        pass
+        return None
 
 #Does this setting actually do anything on HESP48120U200-H?
 def read_output_priority():
-    result = 0
     try:
       result = instr.read_register(0xE204)
     except:
-      pass
+      return None
     output_priority = {0: "Solar First", 1: "Utility First", 2: "Solar/Battery/Utility"}
     if result in output_priority:
         debug("Output Priority: " + output_priority[result])
@@ -1770,11 +1666,10 @@ def write_output_priority(value: str):
             pass
 
 def read_hybrid_mode():
-    result = 0
     try:
       result = instr.read_register(0xE037)
     except:
-      pass
+      return None
     hybrid_mode = {1: "On Grid", 2: "Limit Power to UPS", 3: "Limit Power to Home"}
     if result in hybrid_mode: 
         debug("Hyrbid Mode: " + hybrid_mode[result])
@@ -1794,11 +1689,10 @@ def write_hybrid_mode(value: str):
             pass
 
 def read_grid_charging_current_limit():
-    result = 0
     try:
       result = instr.read_register(0xE005)
     except:
-      pass
+      return None
     result = result / 10
     debug("Grid Charging Current Limit: " + str(result) + "A")
     return result
@@ -1809,15 +1703,14 @@ def write_grid_charging_current_limit(value: str):
     try:
         instr.write_register(0xE005, int(value))
     except:
-        pass
+        return None
 
 
 def read_battery_equalization_charging_enable():
-    result = 0
     try:
       result = instr.read_register(0xE206)
     except:
-      pass
+      return None
     enable = {0: "Disable", 1: "Enable"}
     debug("Battery Equal Charging Enable: " + enable[result])
     return result
@@ -1827,37 +1720,34 @@ def write_battery_equalization_charging_enable(value: str):
     try:
         instr.write_register(0xE206, int(value))
     except:
-        pass
+        return None
 
 
 def read_output_voltage_set():
-    result = 0
     try:
       result = instr.read_register(0xE208)
     except:
-      pass
+      return None
     result = result / 10
     debug("Output Voltage Set: " + str(result) + "V")
     return result
 
 
 def read_output_frequency_set():
-    result = 0
     try:
       result = instr.read_register(0xE209)
     except:
-      pass
+      return None
     result = result / 100
     debug("Output Frequency Set: " + str(result) + "Hz")
     return result
 
 
 def read_total_charging_current_limit():
-    result = 0
     try:
       result = instr.read_register(0xE20A)
     except:
-      pass
+      return None
     result = result / 10
     debug("Total Charging Current Limit: " + str(result) + "A")
     return result
@@ -1868,15 +1758,14 @@ def write_total_charging_current_limit(value: str):
     try:
         instr.write_register(0xE20A, int(value))
     except:
-        pass
+        return None
 
 
 def read_ac_voltage_range():
-    result = 0
     try:
       result = instr.read_register(0xE20B)
     except:
-      pass
+      return None
     range = {
         0: "Wide band (APL)",
         1: "Narrow band (UPS)",
@@ -1890,15 +1779,14 @@ def write_ac_voltage_range(value: str):
     try:
         instr.write_register(0xE20B, value)
     except:
-        pass
+        return None
 
 
 def read_power_saving_mode():
-    result = 0
     try:
       result = instr.read_register(0xE20C)
     except:
-      pass
+      return None
     enable = {0: "Disable", 1: "Enable"}
     debug("Power Saving Mode: " + enable[result])
     return result
@@ -1909,15 +1797,14 @@ def write_power_saving_mode(value: str):
     try:
         instr.write_register(0xE20C, int(value))
     except:
-        pass
+        return None
 
 
 def read_auto_restart_on_overload():
-    result = 0
     try:
       result = instr.read_register(0xE20D)
     except:
-      pass
+      return None
     enable = {0: "Disable", 1: "Enable"}
     debug("Auto Restart On Overload: " + enable[result])
     return result
@@ -1927,15 +1814,14 @@ def write_auto_restart_on_overload(value: str):
     try:
         instr.write_register(0xE20D, int(value))
     except:
-        pass
+        return None
 
 
 def read_auto_restart_on_overheat():
-    result = 0
     try:
       result = instr.read_register(0xE20E)
     except:
-      pass
+      return None
     enable = {0: "Disable", 1: "Enable"}
     debug("Auto Restart On Overheat: " + enable[result])
     return result
@@ -1945,15 +1831,14 @@ def write_auto_restart_on_overheat(value: str):
     try:
         instr.write_register(0xE20E, int(value))
     except:
-        pass
+        return None
 
 
 def read_charging_source_priority():
-    result = 0
     try:
       result = instr.read_register(0xE20F)
     except:
-      pass
+      return None
     priority = {
         0: "Solar First",  # (AC power charging available when PV fails)",
         1: "Utility First",  # (PV charging available when AC fails)",
@@ -1978,15 +1863,14 @@ def write_charging_source_priority(value: str):
         try:
             instr.write_register(0xE20F, int_value)
         except:
-            pass
+            return None
 
 
 def read_alarm_enabled():
-    result = 0
     try:
       result = instr.read_register(0xE210)
     except:
-      pass
+      return None
     enable = {0: "Disable", 1: "Enable"}
     debug("Alarm Enabled: " + enable[result])
     return result
@@ -1996,15 +1880,14 @@ def write_alarm_enabled(value: str):
     try:
         instr.write_register(0xE210, int(value))
     except:
-        pass
+        return None
 
 
 def read_alarm_enabled_on_input_loss():
-    result = 0
     try:
       result = instr.read_register(0xE211)
     except:
-      pass
+      return None
     enable = {0: "Disable", 1: "Enable"}
     debug("Alarm Enabled On Input Loss: " + enable[result])
     return result
@@ -2014,15 +1897,14 @@ def write_alarm_enabled_on_input_loss(value: str):
     try:
         instr.write_register(0xE211, int(value))
     except:
-        pass
+        return None
 
 
 def read_bypass_on_overload():
-    result = 0
     try:
       result = instr.read_register(0xE212)
     except:
-      pass
+      return None
     enable = {0: "Disable", 1: "Enable"}
     debug("Bypass On Overload: " + enable[result])
     return result
@@ -2032,15 +1914,14 @@ def write_bypass_on_overload(value: str):
     try:
         instr.write_register(0xE212, int(value))
     except:
-        pass
+        return None
 
 
 def read_stop_on_bms_error_enabled():
-    result = 0
     try:
       result = instr.read_register(0xE214)
     except:
-      pass
+      return None
     enable = {0: "Disable", 1: "Enable"}
     debug("Stop On BMS Error Enabled: " + enable[result])
     return result
@@ -2050,15 +1931,14 @@ def write_stop_on_bms_error_enabled(value: str):
     try:
         instr.write_register(0xE214, int(value))
     except:
-        pass
+        return None
 
 
 def read_bms_communication_enabled():
-    result = 0
     try:
       result = instr.read_register(0xE215)
     except:
-      pass
+      return None
     enable = {
         0: "Disable",
         1: "485-BMS enabled",
@@ -2072,15 +1952,14 @@ def write_bms_communication_enabled(value: str):
     try:
         instr.write_register(0xE215, int(value))
     except:
-        pass
+        return None
 
 
 def read_dc_load_switch():
-    result = 0
     try:
       result = instr.read_register(0xE216)
     except:
-      pass
+      return None
     enable = {0: "Disable", 1: "Enable"}
     debug("DC Load Switch: " + enable[result])
     return result
@@ -2091,18 +1970,17 @@ def write_dc_load_switch(value: str):
     try:
         instr.write_register(0xE216, value)
     except:
-        pass
+        return None
 
 
 #################### P08 Setting Area for Inverter Grid-connection Parameters ###############
 
 
 def read_battery_discharge_enabled():
-    result = 0
     try:
       result = instr.read_register(0xE42A)
     except:
-      pass
+      return None
     priority = {
         0: "Standby",
         1: "Battery Discharge For Load",  # (PV charging available when AC fails)",
@@ -2127,17 +2005,16 @@ def write_battery_discharge_enabled(value: str):
         try:
             instr.write_register(0xE42A, int_value)
         except:
-            pass
+            return None
 
 
 #################### P09 Power Statistics Historical Data ##################
 def read_total_pv_energy_last_7_days():
     # extract data from the last 7 days
-    result = 0
     try:
       result = instr.read_registers(0xF000, 7)
     except:
-      pass
+      return None
     for i in range(len(result)):
         result[i] = result[i] / 10
     print("Total PV Energy Last 7 days: " + "kWh, ".join(map(str, result)) + "kWh")
@@ -2145,21 +2022,19 @@ def read_total_pv_energy_last_7_days():
 
 
 def read_total_battery_charge_energy_last_7_days():
-    result = 0
     try:
       result = instr.read_registers(0xF007, 7)
     except:
-      pass
+      return None
     print("Total Battery Charged Last 7 days: " + "Ah, ".join(map(str, result)) + "Ah")
     return result
 
 
 def read_total_battery_discharge_energy_last_7_days():
-    result = 0
     try:
       result = instr.read_registers(0xF00E, 7)
     except:
-      pass
+      return None
     print(
         "Total Battery Discharged Last 7 days: " + "Ah, ".join(map(str, result)) + "Ah"
     )
@@ -2167,21 +2042,19 @@ def read_total_battery_discharge_energy_last_7_days():
 
 
 def read_total_line_charge_energy_last_7_days():
-    result = 0
     try:
       result = instr.read_registers(0xF015, 7)
     except:
-      pass
+      return None
     print("Total Line Charged Last 7 days: " + "Ah, ".join(map(str, result)) + "Ah")
     return result
 
 
 def read_total_load_consume_last_7_days():
-    result = 0
     try:
       result = instr.read_registers(0xF01C, 7)
     except:
-      pass
+      return None
     for i in range(len(result)):
         result[i] = result[i] / 10
     print("Total Load Consume Last 7 days: " + "kWh, ".join(map(str, result)) + "kWh")
@@ -2189,11 +2062,10 @@ def read_total_load_consume_last_7_days():
 
 
 def read_total_load_consume_from_line_last_7_days():
-    result = 0
     try:
       result = instr.read_registers(0xF023, 7)
     except:
-      pass
+      return None
     for i in range(len(result)):
         result[i] = result[i] / 10
     print(
@@ -2205,86 +2077,78 @@ def read_total_load_consume_from_line_last_7_days():
 
 
 def read_total_last_day_energy_statistics():
-    result = 0
     try:
       result = instr.read_long(0xF02A, byteorder=1)
     except:
-      pass
+      return None
     result = result / 10
     debug("Total Last Day Energy Statistics : " + str(result) + "kWh")
     return result
 
 
 def read_total_generated_energy_to_grid_today():
-    result = 0
     try:
       result = instr.read_register(0xF02C)
     except:
-      pass
+      return None
     result = result / 10
     debug("Total Generated Energy to Grid Today: " + str(result) + "kWh")
     return result
 
 
 def read_total_battery_charged_today():
-    result = 0
     try:
       result = instr.read_register(0xF02D)
     except:
-      pass
+      return None
     debug("Total Battery Charged Today: " + str(result) + "Ah")
     return result
 
 
 def read_total_battery_discharged_today():
-    result = 0
     try:
       result = instr.read_register(0xF02E)
     except:
-      pass
+      return None
     debug("Total Battery Discharged Today: " + str(result) + "Ah")
     return result
 
 
 def read_total_pv_power_generated_today():
-    result = 0
     try:
       result = instr.read_register(0xF02F)
     except:
-      pass
+      return None
     result = result / 10
     debug("Total PV Power Generated Today: " + str(result) + "kWh")
     return result
 
 
 def read_total_load_consumed_today():
-    result = 0
     try:
       result = instr.read_register(0xF030)
     except:
-      pass
+      return None
     result = result / 10
     debug("Total Load Consumed Today: " + str(result) + "kWh")
     return result
 
 
 def read_total_operating_days():
-    result = 0
     try:
       result = instr.read_register(0xF031)
     except:
-      pass
+      return None
     result = result / 10
     debug("Total Operating Days: " + str(result) + "days")
     return result
 
 
 def read_total_grid_energy_total():
-    result = 0
     try:
       result = instr.read_long(0xF032, byteorder=1)
     except:
-      pass
+      return None
     debug(result)
     result = result / 10
     debug("Total Grid Energy: " + str(result) + "kWh")
@@ -2292,96 +2156,87 @@ def read_total_grid_energy_total():
 
 
 def read_total_battery_charging_total():
-    result = 0
     try:
       result = instr.read_long(0xF034, byteorder=1)
     except:
-      pass
+      return None
     result = result
     debug("Total Battery Charging: " + str(result) + "Ah")
     return result
 
 
 def read_total_battery_discharging_total():
-    result = 0
     try:
       result = instr.read_long(0xF036, byteorder=1)
     except:
-      pass
+      return None
     result = result
     debug("Total Battery Discharging: " + str(result) + "Ah")
     return result
 
 
 def read_total_pv_generated_energy_total():
-    result = 0
     try:
       result = instr.read_long(0xF038, byteorder=1)
     except:
-      pass
+      return None
     result = result / 10
     debug("Total PV Generated Energy: " + str(result) + "kWh")
     return result
 
 
 def read_total_load_consumption_total():
-    result = 0
     try:
       result = instr.read_long(0xF03A, byteorder=1)
     except:
-      pass
+      return None
     result = result / 10
     debug("Total Load consumption Energy: " + str(result) + "kWh")
     return result
 
 
 def read_total_grid_charged_today():
-    result = 0
     try:
       result = instr.read_register(0xF03C)
     except:
-      pass
+      return None
     debug("Total Grid Charged Today: " + str(result) + "Ah")
     return result
 
 
 def read_total_grid_consumed_today():
-    result = 0
     try:
       result = instr.read_register(0xF03D)
     except:
-      pass
+      return None
     result = result / 10
     debug("Total Load Consumed Today: " + str(result) + "kWh")
     return result
 
 
 def read_total_inverter_worktime_today():
-    result = 0
     try:
       result = instr.read_register(0xF03E)
     except:
-      pass
+      return None
     debug("Total Inverter Worktime Today: " + str(result) + "min")
     return result
 
 
 def read_total_line_worktime_today():
-    result = 0
     try:
       result = instr.read_register(0xF03F)
     except:
-      pass
+      return None
     debug("Total Line Worktime Today: " + str(result) + "min")
     return result
 
 
 def read_total_power_on_time():
-    result = 0
     try:
       results = instr.read_registers(0xF040, 3)
     except:
-      pass
+      return None
 
     year = (results[0] >> 8) & 0xFF  # high byte
     month = results[0] & 0xFF  # Low byte
@@ -2397,11 +2252,10 @@ def read_total_power_on_time():
 
 
 def read_total_last_equalization_charge_time():
-    result = 0
     try:
       results = instr.read_registers(0xF043, 3)
     except:
-      pass
+      return None
 
     year = (results[0] >> 8) & 0xFF  # high byte
     month = results[0] & 0xFF  # Low byte
@@ -2417,52 +2271,47 @@ def read_total_last_equalization_charge_time():
 
 
 def read_total_grid_charged_total():
-    result = 0
     try:
       result = instr.read_long(0xF046, byteorder=1)
     except:
-      pass
+      return None
     debug("Total Grid Charged Total: " + str(result) + "Ah")
     return result
 
 
 def read_total_grid_consumed_today():
-    result = 0
     try:
       result = instr.read_long(0xF048, byteorder=1)
     except:
-      pass
+      return None
     result = result / 10
     debug("Total Load Consumed Total: " + str(result) + "kWh")
     return result
 
 
 def read_total_inverter_work_time_total():
-    result = 0
     try:
       result = instr.read_register(0xF04A)
     except:
-      pass
+      return None
     debug("Total Inverter Work Time Total: " + str(result) + "h")
     return result
 
 
 def read_total_grid_work_time_total():
-    result = 0
     try:
       result = instr.read_register(0xF04B)
     except:
-      pass
+      return None
     debug("Total Grid Work Time Total: " + str(result) + "h")
     return result
 
 
 def read_total_grid_chrging_power_today():
-    result = 0
     try:
       result = instr.read_register(0xF04C)
     except:
-      pass
+      return None
     result = result / 10
     debug("Total Load Consumed Total: " + str(result) + "kWh")
     return result
@@ -2471,11 +2320,10 @@ def read_total_grid_chrging_power_today():
 ############# P10 Fault Record ########################
 def read_errors():
     for i in range(32):
-        result = 0
         try:
           results = instr.read_registers(0xF800 + (0x10 * i), 16)
         except:
-          pass
+          return None
 
         error_code = results[0]
         if error_code == 0:

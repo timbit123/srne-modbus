@@ -95,6 +95,15 @@ client.loop_start()
 force_update = True
 while True:
 
+    # check if we need to update values
+    if len(writing_queue) > 0:
+        for set_fuction, payload in writing_queue:
+            if set_fuction(payload) != None:
+                #Force an update of all values, since some config items will affect multiple
+                force_update = True
+        writing_queue = []
+        time.sleep(loop_sleep)
+
     for name, vals in mqtt_config.items():
         if not vals.get("enabled", True):
             continue
@@ -115,25 +124,17 @@ while True:
             value = vals["value"](**vals["args"])
         else:
             value = vals["value"]()
-        mqtt_config[name]["last_update"] = current_time
-        mqtt_config[name]["last_value"] = value
-        publishing_queue.append((topic, value))
-
-    force_update = False
-    time.sleep(loop_sleep)
+        if value != None:
+            mqtt_config[name]["last_update"] = current_time
+            mqtt_config[name]["last_value"] = value
+            publishing_queue.append((topic, value))
 
     if len(publishing_queue) > 0:
         for topic, value in publishing_queue:
             client.publish(topic, value)
         publishing_queue = []
 
-    # check if we need to update values
-    if len(writing_queue) > 0:
-        for set_fuction, payload in writing_queue:
-            set_fuction(payload)
-            #Force an update of all values, since some config items will affect multiple
-            force_update = True
-        writing_queue = []
-        time.sleep(0.1)
+    force_update = False
+    time.sleep(loop_sleep)
 
 client.loop_stop()
