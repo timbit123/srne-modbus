@@ -52,24 +52,28 @@ system_interval: int = -1  # will fetch data one time only
 
 mqtt_set_config: dict[str, any] = {
     "charging/current_limit": modbus.write_pv_charging_current_limit,
-    "charging/rebulk_voltage": modbus.write_battery_rebulk_voltage,
     "charging/voltage_limit": modbus.write_battery_charge_limit_voltage,
+    "charging/overvoltage_limit": modbus.write_battery_overvoltage_protection_voltage,
+    "charging/bulk_charge_time": modbus.write_battery_bulk_charge_time,
     "charging/bulk_voltage": modbus.write_battery_bulk_voltage,
-    "charging/source_priority": modbus.write_charging_source_priority,
-    "charging/absorption_voltage": modbus.write_battery_absorption_voltage,
-    "charging/float_voltage": modbus.write_battery_float_charge_voltage,
+    "charging/rebulk_voltage": modbus.write_battery_rebulk_voltage,
     "charging/overdischarge_return_voltage": modbus.write_battery_overdischarge_return_voltage,
     "charging/undervoltage_warning_voltage": modbus.write_battery_undervoltage_warning,
     "charging/discharge_limit_voltage": modbus.write_battery_discharge_limit_voltage,
+    "charging/overdicharge_limit": modbus.write_battery_overdischarge_limit,
     "charging/stop_discharge_soc_limit": modbus.write_battery_stop_state_of_charge,
     "charging/stop_grid_discharge_soc_limit": modbus.write_battery_soc_switch_to_line,
     "charging/restart_grid_discharge_soc_limit": modbus.write_battery_soc_switch_to_battery,
     "charging/stop_charging_soc_limit": modbus.write_stop_charging_soc_set,
     "charging/total_charging_current_limit": modbus.write_total_charging_current_limit,
+    "charging/stop_charging_current_limit": modbus.write_stop_charging_current_limit,
     "inverter/power_saving": modbus.write_power_saving_mode,
+    "charging/source_priority": modbus.write_charging_source_priority,
 #    "inverter/output_priority": modbus.write_output_priority,
     "inverter/hybrid_mode": modbus.write_hybrid_mode,
     "inverter/battery_priority": modbus.write_battery_discharge_enabled,
+    "inverter/pv_priority": modbus.write_pv_power_priority_set,
+    "charging/time_charge_enabled": modbus.write_time_charge_enabled,
 }
 
 mqtt_config: dict[str, dict[str, any]] = {
@@ -1365,7 +1369,7 @@ mqtt_config: dict[str, dict[str, any]] = {
         "last_update": None,
         "topic_type": "number",
         "config": {
-            "name": "Battery Overvoltage Protection Limit",
+            "name": "Battery Charge Voltage Limit (Soft)",
             "icon": "mdi:ray-vertex",
             "unit_of_measurement": "V",
             "device_class": "voltage",
@@ -1377,42 +1381,35 @@ mqtt_config: dict[str, dict[str, any]] = {
             "mode:": "box"
         },
     },
-    #"charging/overvoltage_protection": {
-    #    "enabled": battery_enabled,
-    #    "value": modbus.read_battery_overvoltage_protection_voltage,
-    #    "interval": battery_interval,
-    #    "last_update": None,
-    #    "topic_type": "number",
-    #    "config": {
-    #        "name": "Battery Overvoltage Protection Limit",
-    #        "icon": "mdi:ray-vertex",
-    #        "unit_of_measurement": "V",
-    #        "device_class": "voltage",
-    #        "entity_category": "config",
-    #        "min": 9 * modbus.battery_rate,
-    #        "max": 14.6 * modbus.battery_rate,
-    #        "step": 0.1,
-    #        "command_topic": "charging/overvoltage_protection",
-            #"mode:": "box"
-    #    },
-    #},
-    "charging/absorption_voltage": {
+    "charging/overvoltage_limit": {
         "enabled": battery_enabled,
-        "value": modbus.read_battery_absorption_voltage,
+        "value": modbus.read_battery_overvoltage_protection_voltage,
         "interval": battery_interval,
         "last_update": None,
         "topic_type": "number",
         "config": {
-            "name": "Battery Absorption Voltage",
+            "name": "Battery Overvoltage Protection Limit (Hard)",
             "icon": "mdi:ray-vertex",
             "unit_of_measurement": "V",
             "device_class": "voltage",
             "entity_category": "config",
             "min": 9 * modbus.battery_rate,
-            "max": 14.4 * modbus.battery_rate,
+            "max": 15.5 * modbus.battery_rate,
             "step": 0.1,
-            "command_topic": "charging/absorption_voltage",
+            "command_topic": "charging/overvoltage_limit",
             "mode:": "box"
+        },
+    },
+    "charging/equalization_voltage": {
+        "enabled": battery_enabled,
+        "value": modbus.read_battery_equalization_voltage,
+        "interval": battery_interval,
+        "last_update": None,
+        "config": {
+            "name": "Battery Equalization Voltage",
+            "icon": "mdi:ray-vertex",
+            "unit_of_measurement": "V",
+            "device_class": "voltage",
         },
     },
     "charging/source_priority": {
@@ -1428,6 +1425,43 @@ mqtt_config: dict[str, dict[str, any]] = {
                 "Utility First",
             ],
             "command_topic": "charging/source_priority",
+        },
+    },
+    "charging/bulk_charge_time": {
+        "enabled": True,
+        "value": modbus.read_battery_bulk_charge_time,
+        "interval": general_interval,
+        "last_update": None,
+        "topic_type": "number",
+        "config": {
+            "name": "Bulk Charge Time",
+            "icon": "mdi:clock",
+            "mode": "box",
+            "min": 10, 
+            "max": 900, 
+            "step": 1,
+            "entity_category": "config",
+            "command_topic": "charging/bulk_charge_time",
+        },
+    },
+    "charging/equalization_charge_time": {
+        "enabled": True,
+        "value": modbus.read_battery_equalization_charge_time,
+        "interval": general_interval,
+        "last_update": None,
+        "config": {
+            "name": "Equalization Charge Time",
+            "icon": "mdi:clock",
+        },
+    },
+    "charging/equalization_charge_interval": {
+        "enabled": True,
+        "value": modbus.read_battery_equalization_charge_interval,
+        "interval": general_interval,
+        "last_update": None,
+        "config": {
+            "name": "Equalization Charge Interval",
+            "icon": "mdi:clock",
         },
     },
     "charging/bulk_voltage": {
@@ -1453,18 +1487,11 @@ mqtt_config: dict[str, dict[str, any]] = {
         "value": modbus.read_battery_float_charge_voltage,
         "interval": battery_interval,
         "last_update": None,
-        "topic_type": "number",
         "config": {
             "name": "Battery Float Charge Voltage",
             "icon": "mdi:ray-vertex",
             "unit_of_measurement": "V",
             "device_class": "voltage",
-            "entity_category": "config",
-            "min": 9 * modbus.battery_rate,
-            "max": 15.5 * modbus.battery_rate,
-            "step": 0.1,
-            "command_topic": "charging/float_voltage",
-            "mode:": "box"
         },
     },
     "charging/overdischarge_return_voltage": {
@@ -1505,6 +1532,25 @@ mqtt_config: dict[str, dict[str, any]] = {
             "mode:": "box"
         },
     },
+    "charging/overdischarge_limit": {
+        "enabled": battery_enabled,
+        "value": modbus.read_battery_overdischarge_limit,
+        "interval": battery_interval,
+        "last_update": None,
+        "topic_type": "number",
+        "config": {
+            "name": "Battery Overdischarge Limit (Soft)",
+            "icon": "mdi:ray-vertex",
+            "unit_of_measurement": "V",
+            "device_class": "voltage",
+            "entity_category": "config",
+            "min": 9 * modbus.battery_rate,
+            "max": 15.5 * modbus.battery_rate,
+            "step": 0.1,
+            "command_topic": "charging/undervoltage_warning_voltage",
+            "mode:": "box"
+        },
+    },
     "charging/discharge_limit_voltage": {
         "enabled": battery_enabled,
         "value": modbus.read_battery_discharge_limit_voltage,
@@ -1512,7 +1558,7 @@ mqtt_config: dict[str, dict[str, any]] = {
         "last_update": None,
         "topic_type": "number",
         "config": {
-            "name": "Battery Discharge Limit",
+            "name": "Battery Overdischarge Protection Limit (Hard)",
             "icon": "mdi:ray-vertex",
             "unit_of_measurement": "V",
             "device_class": "voltage",
@@ -1610,7 +1656,51 @@ mqtt_config: dict[str, dict[str, any]] = {
             "mode:": "box"
         },
     },
-    # "charging/": {},
+    "charging/stop_charging_current_limit": {
+        "enabled": battery_enabled,
+        "value": modbus.read_stop_charging_current_limit,
+        "interval": battery_interval,
+        "last_update": None,
+        "topic_type": "number",
+        "config": {
+            "name": "Battery Stop Charging Current Limit",
+            "icon": "mdi:current-ac",
+            "unit_of_measurement": "A",
+            "device_class": "current",
+            "min": 0,
+            "max": 10,
+            "step": 0.1,
+            "command_topic": "charging/stop_charging_current_limit",
+            "mode:": "box"
+        },
+    },
+    "charging/equalization_enable": {
+        "enabled": battery_enabled,
+        "value": modbus.read_battery_equalization_charging_enable,
+        "interval": battery_interval,
+        "last_update": None,
+        "config": {
+            "name": "Battery Equalization Enable",
+        },
+    },
+    "charging/equalization_timeout": {
+        "enabled": battery_enabled,
+        "value": modbus.read_battery_equalization_charge_timeout,
+        "interval": battery_interval,
+        "last_update": None,
+        "config": {
+            "name": "Battery Equalization Charge Timeout",
+        },
+    },
+    "charging/last_equalization_time": {
+        "enabled": battery_enabled,
+        "value": modbus.read_total_last_equalization_charge_time,
+        "interval": battery_interval,
+        "last_update": None,
+        "config": {
+            "name": "Last Equalization Charge Time",
+        },
+    },
     "inverter/power_saving": {
         "value": modbus.read_power_saving_mode,
         "interval": general_interval,
@@ -1665,6 +1755,30 @@ mqtt_config: dict[str, dict[str, any]] = {
                 "Battery Discharge For Grid",
             ],
             "command_topic": "inverter/battery_priority",
+        },
+    },
+   "inverter/pv_priority": {
+        "value": modbus.read_pv_power_priority_set,
+        "interval": general_interval,
+        "last_update": None,
+        "topic_type": "select",
+        "config": {
+            "name": "PV Priority Mode",
+            "icon": "mdi:export",
+            "options": ["Load Priority", "Charging Priority", "Grid Priority"],
+            "command_topic": "inverter/pv_priority",
+        },
+    },
+   "charging/time_charge_enabled": {
+        "value": modbus.read_time_charge_enabled,
+        "interval": general_interval,
+        "last_update": None,
+        "topic_type": "select",
+        "config": {
+            "name": "Timed Charge Enabled",
+            "icon": "mdi:export",
+            "options": ["Disabled", "Enabled"],
+            "command_topic": "charging/time_charge_enabled",
         },
     },
     # "battery/shutdown_voltage": {},

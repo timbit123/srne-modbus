@@ -877,7 +877,6 @@ def write_battery_type_set(value: str):
 battery_rate: float = read_battery_rate_voltage() / 12
 
 
-#This doesn't seem to work on HESP48120U200-H
 def read_battery_overvoltage_protection_voltage():
     result = 0
     try:
@@ -919,18 +918,18 @@ def write_battery_charge_limit_voltage(value: str):
         pass
 
 
-def read_battery_absorption_voltage():
+def read_battery_equalization_voltage():
     result = 0
     try:
       result = instr.read_register(0xE007)
     except:
       pass
     result = (result / 10) * battery_rate
-    debug("Battery Charge Absorption Voltage: " + str(result) + "V")
+    debug("Battery Charge Equalization Voltage: " + str(result) + "V")
     return result
 
 
-def write_battery_absorption_voltage(value: str):
+def write_battery_equalization_voltage(value: str):
     if len(value) == 0:
         return
     value = int(float(value) / battery_rate * 10)
@@ -1045,7 +1044,7 @@ def write_battery_undervoltage_warning(value: str):
         pass
 
 
-def read_battery_overdischarge_warning():
+def read_battery_overdischarge_limit():
     result = 0
     try:
       result = instr.read_register(0xE00D)
@@ -1056,7 +1055,7 @@ def read_battery_overdischarge_warning():
     return result
 
 
-def write_battery_overdischarge_warning(value: str):
+def write_battery_overdischarge_limit(value: str):
     if len(value) == 0:
         return
     value = int(float(value) / battery_rate * 10)
@@ -1125,17 +1124,17 @@ def write_battery_overdischarge_delay_time(value: str):
         pass
 
 
-def read_battery_balancing_charge_time():
+def read_battery_equalization_charge_time():
     result = 0
     try:
       result = instr.read_register(0xE011)
     except:
       pass
-    debug("Battery Balancing Charge Time: " + str(result) + "min")
+    debug("Battery Equalization Charge Time: " + str(result) + "min")
     return result
 
 
-def write_battery_balancing_charge_time(value: str):
+def write_battery_equalization_charge_time(value: str):
     if len(value) == 0:
         return
     try:
@@ -1144,17 +1143,17 @@ def write_battery_balancing_charge_time(value: str):
         pass
 
 
-def read_battery_improve_charge_time():
+def read_battery_bulk_charge_time():
     result = 0
     try:
       result = instr.read_register(0xE012)
     except:
       pass
-    debug("Battery Improve Charge Time: " + str(result) + "min")
+    debug("Battery Bulk Charge Time: " + str(result) + "min")
     return result
 
 
-def write_battery_improve_charge_time(value: str):
+def write_battery_bulk_charge_time(value: str):
     if len(value) == 0:
         return
     try:
@@ -1163,17 +1162,17 @@ def write_battery_improve_charge_time(value: str):
         pass
 
 
-def read_battery_balancing_charge_interval():
+def read_battery_equalization_charge_interval():
     result = 0
     try:
       result = instr.read_register(0xE013)
     except:
       pass
-    debug("Battery Balancing Charge Interval: " + str(result) + "days")
+    debug("Battery Equalization Charge Interval: " + str(result) + "days")
     return result
 
 
-def write_battery_balancing_charge_interval(value: str):
+def write_battery_equalization_charge_interval(value: str):
     try:
         instr.write_register(0xE013, int(value))
     except:
@@ -1199,7 +1198,7 @@ def write_battery_dc_switch_low_voltage(value: str):
         pass
 
 
-def read_stop_charging_current_set():
+def read_stop_charging_current_limit():
     """
     Only the lithium battery is effective, and when the current of constant-voltage charging state is lower than this value, the charging is stopped.
     """
@@ -1213,7 +1212,7 @@ def read_stop_charging_current_set():
     return result
 
 
-def write_stop_charging_current_set(value: str):
+def write_stop_charging_current_limit(value: str):
     value = float(value) * 10
     try:
         instr.write_register(0xE01C, int(value))
@@ -1314,17 +1313,17 @@ def write_battery_voltage_switch_to_inverter(value: str):
         pass
 
 
-def read_battery_balancing_charge_timeout():
+def read_battery_equalization_charge_timeout():
     result = 0
     try:
       result = instr.read_register(0xE023)
     except:
       pass
-    debug("Battery Balancing Charge Timeout: " + str(result) + "min")
+    debug("Battery Equalization Charge Timeout: " + str(result) + "min")
     return result
 
 
-def write_battery_balancing_charge_timeout(value: str):
+def write_battery_equalization_charge_timeout(value: str):
     """
     steps = 5
     """
@@ -1521,9 +1520,21 @@ def read_time_charge_enabled():
       result = instr.read_register(0xE02C)
     except:
       pass
-    debug("Charge Time Enabled: " + str(result))
-    return result
+    enabled = "Enabled" if int(result) else "Disabled"
+    debug("Charge Time Enabled: " + enabled)
+    return enabled
 
+def write_time_charge_enabled(value: str):
+    priority = {
+        "Disabled": 0,
+        "Enabled": 1,
+    }
+    if value in priority:
+        int_value = priority[value]
+        try:
+            instr.write_register(0xE02C, int_value)
+        except:
+            pass
 
 def read_discharge_start_time_1():
     # Hours and minutes: 23h*256+59min=5,947
@@ -1666,7 +1677,7 @@ def read_time_discharge_enabled():
     # 0:Disabled, 1:Enabled
     result = 0
     try:
-      result = instr.read_register(0xE02C)
+      result = instr.read_register(0xE033)
     except:
       pass
     debug("Charge Time Enabled: " + str(result))
@@ -1679,17 +1690,22 @@ def read_pv_power_priority_set():
       result = instr.read_register(0xE039)
     except:
       pass
-    priority_mode = {0: "Charging priority", 1: "Load priority"}
-    debug("PV Power Priority Set: " + priority_mode[result])
+    priority_mode = {0: "Load Priority", 1: "Charging Priority", 2: "Grid Priority"}
+    if result in priority_mode: 
+        debug("PV Priority Mode: " + priority_mode[result])
+        return priority_mode[result]
     return result
 
 
 def write_pv_power_priority_set(value: str):
-    try:
-        instr.write_register(0xE039, int(value))
-    except:
-        pass
-
+    priority_mode = {"Load Priority" : 0, "Charging Priority" : 1, "Grid Priority" : 2}
+    if value in priority_mode:
+        int_value = priority_mode[value]
+        try:
+            instr.write_register(0xE039, int_value)
+        except Exception:
+            print(traceback.format_exc())
+            pass
 
 #################### P07 User Setting Area for Inverter Parameters ##################
 def read_rs485_address_set():
@@ -1796,7 +1812,7 @@ def write_grid_charging_current_limit(value: str):
         pass
 
 
-def read_battery_balance_charging_enable():
+def read_battery_equalization_charging_enable():
     result = 0
     try:
       result = instr.read_register(0xE206)
@@ -1807,7 +1823,7 @@ def read_battery_balance_charging_enable():
     return result
 
 
-def write_battery_balance_charging_enable(value: str):
+def write_battery_equalization_charging_enable(value: str):
     try:
         instr.write_register(0xE206, int(value))
     except:
@@ -2089,9 +2105,9 @@ def read_battery_discharge_enabled():
       pass
     priority = {
         0: "Standby",
-        1: "Battery Fischarge For Load",  # (PV charging available when AC fails)",
+        1: "Battery Discharge For Load",  # (PV charging available when AC fails)",
         2: "Battery Discharge For Home",  # (AC power and PV charging at the same time, with PV priority)",
-        3: "Battery dDischarge For Grid",
+        3: "Battery Discharge For Grid",
     }
     if result in priority:
         debug("Battery Discharge Enabled: " + priority[result])
@@ -2380,7 +2396,7 @@ def read_total_power_on_time():
     return f"20{year:02d}-{month:02d}-{day:02d} {hour:02d}:{minute:02d}:{second:02d}"
 
 
-def read_total_last_balancing_charge_time():
+def read_total_last_equalization_charge_time():
     result = 0
     try:
       results = instr.read_registers(0xF043, 3)
@@ -2395,7 +2411,7 @@ def read_total_last_balancing_charge_time():
     second = results[2] & 0xFF  # Low byte
 
     debug(
-        f"Last balancing charge time: 20{year:02d}-{month:02d}-{day:02d} {hour:02d}:{minute:02d}:{second:02d}"
+        f"Last equalization charge time: 20{year:02d}-{month:02d}-{day:02d} {hour:02d}:{minute:02d}:{second:02d}"
     )
     return f"20{year:02d}-{month:02d}-{day:02d} {hour:02d}:{minute:02d}:{second:02d}"
 
