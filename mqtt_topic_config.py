@@ -362,6 +362,18 @@ mqtt_config: dict[str, dict[str, any]] = {
             "device_class": "frequency",
         },
     },
+    "grid/active_power_a": {
+        "enabled": split_phase >= 1,
+        "value": modbus.read_grid_active_power_a,
+        "interval": grid_interval,
+        "last_update": None,
+        "config": {
+            "name": "Grid active power A",
+            "icon": "mdi:flash",
+            "unit_of_measurement": "W",
+            "device_class": "power",
+        },
+    },
     "grid/power_a": {
         "enabled": split_phase >= 1,
         "value": lambda: round(
@@ -405,6 +417,18 @@ mqtt_config: dict[str, dict[str, any]] = {
             "device_class": "current",
         },
     },
+    "grid/active_power_b": {
+        "enabled": split_phase >= 2,
+        "value": modbus.read_grid_active_power_b,
+        "interval": grid_interval,
+        "last_update": None,
+        "config": {
+            "name": "Grid active power B",
+            "icon": "mdi:flash",
+            "unit_of_measurement": "W",
+            "device_class": "power",
+        },
+    },
     "grid/power_b": {
         "enabled": split_phase >= 2,
         "value": lambda: round(
@@ -446,6 +470,18 @@ mqtt_config: dict[str, dict[str, any]] = {
             "icon": "mdi:current-ac",
             "unit_of_measurement": "A",
             "device_class": "current",
+        },
+    },
+    "grid/active_power_c": {
+        "enabled": split_phase >= 3,
+        "value": modbus.read_grid_active_power_c,
+        "interval": grid_interval,
+        "last_update": None,
+        "config": {
+            "name": "Grid active power C",
+            "icon": "mdi:flash",
+            "unit_of_measurement": "W",
+            "device_class": "power",
         },
     },
     "grid/power_c": {
@@ -903,6 +939,43 @@ mqtt_config: dict[str, dict[str, any]] = {
             "device_class": "power",
         },
     },
+    ############ Home #####################
+    "home/active_power_a": {
+        "enabled": split_phase >= 1,
+        "value": modbus.read_home_load_active_power_a,
+        "interval": load_interval,
+        "last_update": None,
+        "config": {
+            "name": "Home active power A",
+            "icon": "mdi:flash",
+            "unit_of_measurement": "W",
+            "device_class": "power",
+        },
+    },
+    "home/active_power_b": {
+        "enabled": split_phase >= 2,
+        "value": modbus.read_home_load_active_power_b,
+        "interval": load_interval,
+        "last_update": None,
+        "config": {
+            "name": "Home active power B",
+            "icon": "mdi:flash",
+            "unit_of_measurement": "W",
+            "device_class": "power",
+        },
+    },
+    "home/active_power_c": {
+        "enabled": split_phase >= 3,
+        "value": modbus.read_home_load_active_power_c,
+        "interval": load_interval,
+        "last_update": None,
+        "config": {
+            "name": "Home active power C",
+            "icon": "mdi:flash",
+            "unit_of_measurement": "W",
+            "device_class": "power",
+        },
+    },
     ############ Charging Configuration #####################
     "charging/pv_current_limit": {
         "enabled": pv_mpp_trackers >= 1,
@@ -1291,4 +1364,26 @@ mqtt_config: dict[str, dict[str, any]] = {
             "device_class": "energy",
         },
     },
+    "statistics/total_grid_generated_energy": {
+        "value": modbus.read_total_grid_energy_total,
+        "interval": statistics_interval,
+        "last_update": None,
+        "config": {
+            "name": "Total Generated Energy to Grid",
+            "icon": "mdi:chart-bar",
+            "unit_of_measurement": "kWh",
+            "device_class": "energy",
+        },
+    },
+        "statistics/total_pv_generated_energy": {
+        "value": modbus.read_total_pv_generated_energy_total,
+        "interval": statistics_interval,
+        "last_update": None,
+        "config": {
+            "name": "Total Solar Generated Energy",
+            "icon": "mdi:chart-bar",
+            "unit_of_measurement": "kWh",
+            "device_class": "energy",
+        },
+    }
 }
