@@ -695,6 +695,7 @@ def write_power_off_on(value):
     except:
         return None
     debug("Power " + ("Off" if value == 0 else "On"))
+    return True
 
 
 def write_reset(value):
@@ -704,6 +705,7 @@ def write_reset(value):
     except:
         return None
     debug("Reset")
+    return True
 
 
 def write_restore_factory_setting(value):
@@ -711,13 +713,14 @@ def write_restore_factory_setting(value):
     # 2: Clear statistics
     # 3: Clear errors
 
-    if value == "1":
-        try:
-            instr.write_register(0xDF02, 0xAA)
-        except:
-            return None
-        debug("Restore Factory Setting")
-    elif value == "2":
+    #This seems like a bad idea to enable
+    #if value == "1":
+    #    try:
+    #        instr.write_register(0xDF02, 0xAA)
+    #    except:
+    #        return None
+    #    debug("Restore Factory Setting")
+    if value == "2":
         try:
             instr.write_register(0xDF02, 0xBB)
         except:
@@ -729,6 +732,7 @@ def write_restore_factory_setting(value):
         except:
             return None
         debug("Clear errors")
+    return True
 
 
 def write_battery_equal_charging_immediately(value):
@@ -737,6 +741,7 @@ def write_battery_equal_charging_immediately(value):
     except:
         return None
     debug("Battery Equal Charging Immediately: " + str(value))
+    return True
 
 
 #################### P05 Setting Area for Battery-related Parameters ##################
@@ -754,11 +759,11 @@ def read_pv_charging_current_limit():
 
 def write_pv_charging_current_limit(value):
     try:
-        result = instr.write_register(0xE001, int(float(value) * 10))
+        instr.write_register(0xE001, int(float(value) * 10))
     except:
         return None
     debug("Charging Current Limit set to: " + str(value))
-    return result
+    return True
 
 
 def read_battery_rate_voltage():
@@ -810,6 +815,7 @@ def write_battery_type_set(value: str):
         instr.write_register(0xE004, int(value))
     except:
         return None
+    return True
 
 
 ## TODO: maybe at some point we want to init and pull this before anything else
@@ -833,6 +839,7 @@ def write_battery_overvoltage_protection_voltage(value: str):
         instr.write_register(0xE005, value)
     except:
         return None
+    return True
 
 
 def read_battery_charge_limit_voltage():
@@ -847,12 +854,13 @@ def read_battery_charge_limit_voltage():
 
 def write_battery_charge_limit_voltage(value: str):
     if len(value) == 0:
-        return
+        return None
     value = int(float(value) / battery_rate * 10)
     try:
         instr.write_register(0xE006, value)
     except:
         return None
+    return True
 
 
 def read_battery_equalization_voltage():
@@ -867,12 +875,13 @@ def read_battery_equalization_voltage():
 
 def write_battery_equalization_voltage(value: str):
     if len(value) == 0:
-        return
+        return None
     value = int(float(value) / battery_rate * 10)
     try:
         instr.write_register(0xE007, value)
     except:
         return None
+    return True
 
 
 def read_battery_bulk_voltage():
@@ -887,12 +896,13 @@ def read_battery_bulk_voltage():
 
 def write_battery_bulk_voltage(value: str):
     if len(value) == 0:
-        return
+        return None
     value = int(float(value) / battery_rate * 10)
     try:
         instr.write_register(0xE008, value)
     except:
         return None
+    return True
 
 
 def read_battery_float_charge_voltage():
@@ -907,12 +917,13 @@ def read_battery_float_charge_voltage():
 
 def write_battery_float_charge_voltage(value: str):
     if len(value) == 0:
-        return
+        return None
     value = int(float(value) / battery_rate * 10)
     try:
         instr.write_register(0xE009, value)
     except:
         return None
+    return True
 
 
 def read_battery_rebulk_voltage():
@@ -927,12 +938,13 @@ def read_battery_rebulk_voltage():
 
 def write_battery_rebulk_voltage(value: str):
     if len(value) == 0:
-        return
+        return None
     value = int(float(value) / battery_rate * 10)
     try:
         instr.write_register(0xE00A, value)
     except:
         return None
+    return True
 
 
 def read_battery_overdischarge_return_voltage():
@@ -947,12 +959,13 @@ def read_battery_overdischarge_return_voltage():
 
 def write_battery_overdischarge_return_voltage(value: str):
     if len(value) == 0:
-        return
+        return None
     value = int(float(value) / battery_rate * 10)
     try:
         instr.write_register(0xE00B, value)
     except:
         return None
+    return True
 
 
 def read_battery_undervoltage_warning():
@@ -967,12 +980,13 @@ def read_battery_undervoltage_warning():
 
 def write_battery_undervoltage_warning(value: str):
     if len(value) == 0:
-        return
+        return None
     value = int(float(value) / battery_rate * 10)
     try:
         instr.write_register(0xE00C, value)
     except:
         return None
+    return True
 
 
 def read_battery_overdischarge_limit():
@@ -987,12 +1001,13 @@ def read_battery_overdischarge_limit():
 
 def write_battery_overdischarge_limit(value: str):
     if len(value) == 0:
-        return
+        return None
     value = int(float(value) / battery_rate * 10)
     try:
         instr.write_register(0xE00D, value)
     except:
         return None
+    return True
 
 
 def read_battery_discharge_limit_voltage():
@@ -1007,12 +1022,13 @@ def read_battery_discharge_limit_voltage():
 
 def write_battery_discharge_limit_voltage(value: str):
     if len(value) == 0:
-        return
+        return None
     value = int(float(value) / battery_rate * 10)
     try:
         instr.write_register(0xE00E, value)
     except:
         return None
+    return True
 
 
 def read_battery_stop_state_of_charge():
@@ -1026,11 +1042,12 @@ def read_battery_stop_state_of_charge():
 
 def write_battery_stop_state_of_charge(value: str):
     if len(value) == 0:
-        return
+        return None
     try:
         instr.write_register(0xE00F, int(value))
     except:
         return None
+    return True
 
 
 def read_battery_overdischarge_delay_time():
@@ -1044,11 +1061,12 @@ def read_battery_overdischarge_delay_time():
 
 def write_battery_overdischarge_delay_time(value: str):
     if len(value) == 0:
-        return
+        return None
     try:
         instr.write_register(0xE010, int(value))
     except:
         return None
+    return True
 
 
 def read_battery_equalization_charge_time():
@@ -1062,11 +1080,12 @@ def read_battery_equalization_charge_time():
 
 def write_battery_equalization_charge_time(value: str):
     if len(value) == 0:
-        return
+        return None
     try:
         instr.write_register(0xE011, int(value))
     except:
         return None
+    return True
 
 
 def read_battery_bulk_charge_time():
@@ -1080,11 +1099,12 @@ def read_battery_bulk_charge_time():
 
 def write_battery_bulk_charge_time(value: str):
     if len(value) == 0:
-        return
+        return None
     try:
         instr.write_register(0xE012, int(value))
     except:
         return None
+    return True
 
 
 def read_battery_equalization_charge_interval():
@@ -1101,6 +1121,7 @@ def write_battery_equalization_charge_interval(value: str):
         instr.write_register(0xE013, int(value))
     except:
         return None
+    return True
 
 
 def read_battery_dc_switch_low_voltage():
@@ -1119,6 +1140,7 @@ def write_battery_dc_switch_low_voltage(value: str):
         instr.write_register(0xE01B, int(value))
     except:
         return None
+    return True
 
 
 def read_stop_charging_current_limit():
@@ -1140,6 +1162,7 @@ def write_stop_charging_current_limit(value: str):
         instr.write_register(0xE01C, int(value))
     except:
         return None
+    return True
 
 
 def read_stop_charging_soc_set():
@@ -1159,6 +1182,7 @@ def write_stop_charging_soc_set(value: str):
         instr.write_register(0xE01D, int(value))
     except:
         return None
+    return True
 
 
 def read_battery_soc_low_alarm():
@@ -1175,6 +1199,7 @@ def write_battery_soc_low_alarm(value: str):
         instr.write_register(0xE01E, int(value))
     except:
         return None
+    return True
 
 
 def read_battery_soc_switch_to_line():
@@ -1191,6 +1216,7 @@ def write_battery_soc_switch_to_line(value: str):
         instr.write_register(0xE01F, int(value))
     except:
         return None
+    return True
 
 
 def read_battery_soc_switch_to_battery():
@@ -1207,6 +1233,7 @@ def write_battery_soc_switch_to_battery(value: str):
         instr.write_register(0xE020, int(value))
     except:
         return None
+    return True
 
 
 def read_battery_voltage_switch_to_inverter():
@@ -1228,6 +1255,7 @@ def write_battery_voltage_switch_to_inverter(value: str):
         instr.write_register(0xE022, int(value))
     except:
         return None
+    return True
 
 
 def read_battery_equalization_charge_timeout():
@@ -1247,6 +1275,7 @@ def write_battery_equalization_charge_timeout(value: str):
         instr.write_register(0xE023, int(value))
     except:
         return None
+    return True
 
 
 def read_lithium_battery_active_current_set():
@@ -1265,6 +1294,7 @@ def write_lithium_battery_active_current_set(value: str):
         instr.write_register(0xE024, int(value))
     except:
         return None
+    return True
 
 
 def read_bms_charging_limit_current_mode_setting():
@@ -1288,6 +1318,7 @@ def write_bms_charging_limit_current_mode_setting(value):
     except:
         return None
     debug("BMS Charging Limit Current Mode: " + str(value))
+    return True
 
 
 def read_charge_start_time_1():
@@ -1314,6 +1345,7 @@ def write_charge_start_time_1(value: str):
     except:
         return None
     debug("Charge Start Time 1 set to " + str(hours) + "h" + str(minutes) + "min")
+    return True
 
 
 def read_charge_end_time_1():
@@ -1335,6 +1367,7 @@ def write_charge_end_time_1(value: str):
     except:
         return None
     debug("Charge End Time 1 set to " + str(hours) + "h" + str(minutes) + "min")
+    return True
 
 
 def read_charge_start_time_2():
@@ -1356,6 +1389,7 @@ def write_charge_start_time_2(value: str):
     except:
         return None
     debug("Charge Start Time 2 set to " + str(hours) + "h" + str(minutes) + "min")
+    return True
 
 
 def read_charge_end_time_2():
@@ -1377,6 +1411,7 @@ def write_charge_end_time_2(value: str):
     except:
         return None
     debug("Charge End Time 2 set to " + str(hours) + "h" + str(minutes) + "min")
+    return True
 
 
 def read_charge_start_time_3():
@@ -1398,6 +1433,7 @@ def write_charge_start_time_3(value: str):
     except:
         return None
     debug("Charge Start Time 3 set to " + str(hours) + "h" + str(minutes) + "min")
+    return True
 
 
 def read_charge_end_time_3():
@@ -1419,6 +1455,7 @@ def write_charge_end_time_3(value: str):
     except:
         return None
     debug("Charge End Time 3 set to " + str(hours) + "h" + str(minutes) + "min")
+    return True
 
 
 def read_time_charge_enabled():
@@ -1442,6 +1479,9 @@ def write_time_charge_enabled(value: str):
             instr.write_register(0xE02C, int_value)
         except:
             return None
+    else:
+        return None
+    return True
 
 def read_discharge_start_time_1():
     # Hours and minutes: 23h*256+59min=5,947
@@ -1467,6 +1507,7 @@ def write_discharge_start_time_1(value: str):
     except:
         return None
     debug("Discharge Start Time 1 set to " + str(hours) + "h" + str(minutes) + "min")
+    return True
 
 
 def read_discharge_end_time_1():
@@ -1488,6 +1529,7 @@ def write_discharge_end_time_1(value: str):
     except:
         return None
     debug("Discharge End Time 1 set to " + str(hours) + "h" + str(minutes) + "min")
+    return True
 
 
 def read_discharge_start_time_2():
@@ -1509,6 +1551,7 @@ def write_discharge_start_time_2(value: str):
     except:
         return None
     debug("Discharge Start Time 2 set to " + str(hours) + "h" + str(minutes) + "min")
+    return True
 
 
 def read_discharge_end_time_2():
@@ -1530,6 +1573,7 @@ def write_discharge_end_time_2(value: str):
     except:
         return None
     debug("Discharge End Time 2 set to " + str(hours) + "h" + str(minutes) + "min")
+    return True
 
 
 def read_discharge_start_time_3():
@@ -1551,6 +1595,7 @@ def write_discharge_start_time_3(value: str):
     except:
         return None
     debug("Discharge Start Time 3 set to " + str(hours) + "h" + str(minutes) + "min")
+    return True
 
 
 def read_discharge_end_time_3():
@@ -1572,6 +1617,7 @@ def write_discharge_end_time_3(value: str):
     except:
         return None
     debug("Discharge End Time 3 set to " + str(hours) + "h" + str(minutes) + "min")
+    return True
 
 
 def read_time_discharge_enabled():
@@ -1602,9 +1648,11 @@ def write_pv_power_priority_set(value: str):
         int_value = priority_mode[value]
         try:
             instr.write_register(0xE039, int_value)
-        except Exception:
-            print(traceback.format_exc())
-            pass
+        except:
+            return None
+    else:
+        return None
+    return True
 
 #################### P07 User Setting Area for Inverter Parameters ##################
 def read_rs485_address_set():
@@ -1640,6 +1688,7 @@ def write_parallel_mode(value: str):
         instr.write_register(0xE201, int(value))
     except:
         return None
+    return True
 
 #Does this setting actually do anything on HESP48120U200-H?
 def read_output_priority():
@@ -1664,6 +1713,9 @@ def write_output_priority(value: str):
         except Exception:
             print(traceback.format_exc())
             pass
+    else:
+        return None
+    return True
 
 def read_hybrid_mode():
     try:
@@ -1684,9 +1736,11 @@ def write_hybrid_mode(value: str):
         int_value = hybrid_mode[value]
         try:
             instr.write_register(0xE037, int_value)
-        except Exception:
-            print(traceback.format_exc())
-            pass
+        except:
+            return None
+    else:
+        return None
+    return True
 
 def read_grid_charging_current_limit():
     try:
@@ -1704,6 +1758,7 @@ def write_grid_charging_current_limit(value: str):
         instr.write_register(0xE005, int(value))
     except:
         return None
+    return True
 
 
 def read_battery_equalization_charging_enable():
@@ -1721,6 +1776,7 @@ def write_battery_equalization_charging_enable(value: str):
         instr.write_register(0xE206, int(value))
     except:
         return None
+    return True
 
 
 def read_output_voltage_set():
@@ -1759,6 +1815,7 @@ def write_total_charging_current_limit(value: str):
         instr.write_register(0xE20A, int(value))
     except:
         return None
+    return True
 
 
 def read_ac_voltage_range():
@@ -1780,6 +1837,7 @@ def write_ac_voltage_range(value: str):
         instr.write_register(0xE20B, value)
     except:
         return None
+    return True
 
 
 def read_power_saving_mode():
@@ -1798,6 +1856,7 @@ def write_power_saving_mode(value: str):
         instr.write_register(0xE20C, int(value))
     except:
         return None
+    return True
 
 
 def read_auto_restart_on_overload():
@@ -1815,6 +1874,7 @@ def write_auto_restart_on_overload(value: str):
         instr.write_register(0xE20D, int(value))
     except:
         return None
+    return True
 
 
 def read_auto_restart_on_overheat():
@@ -1832,6 +1892,7 @@ def write_auto_restart_on_overheat(value: str):
         instr.write_register(0xE20E, int(value))
     except:
         return None
+    return True
 
 
 def read_charging_source_priority():
@@ -1864,6 +1925,9 @@ def write_charging_source_priority(value: str):
             instr.write_register(0xE20F, int_value)
         except:
             return None
+    else:
+        return None
+    return True
 
 
 def read_alarm_enabled():
@@ -1881,6 +1945,7 @@ def write_alarm_enabled(value: str):
         instr.write_register(0xE210, int(value))
     except:
         return None
+    return True
 
 
 def read_alarm_enabled_on_input_loss():
@@ -1898,6 +1963,7 @@ def write_alarm_enabled_on_input_loss(value: str):
         instr.write_register(0xE211, int(value))
     except:
         return None
+    return True
 
 
 def read_bypass_on_overload():
@@ -1915,6 +1981,7 @@ def write_bypass_on_overload(value: str):
         instr.write_register(0xE212, int(value))
     except:
         return None
+    return True
 
 
 def read_stop_on_bms_error_enabled():
@@ -1932,6 +1999,7 @@ def write_stop_on_bms_error_enabled(value: str):
         instr.write_register(0xE214, int(value))
     except:
         return None
+    return True
 
 
 def read_bms_communication_enabled():
@@ -1953,6 +2021,7 @@ def write_bms_communication_enabled(value: str):
         instr.write_register(0xE215, int(value))
     except:
         return None
+    return True
 
 
 def read_dc_load_switch():
@@ -1971,6 +2040,7 @@ def write_dc_load_switch(value: str):
         instr.write_register(0xE216, value)
     except:
         return None
+    return True
 
 
 #################### P08 Setting Area for Inverter Grid-connection Parameters ###############
@@ -2006,6 +2076,9 @@ def write_battery_discharge_enabled(value: str):
             instr.write_register(0xE42A, int_value)
         except:
             return None
+    else:
+        return None
+    return True
 
 
 #################### P09 Power Statistics Historical Data ##################
@@ -2344,9 +2417,21 @@ def read_errors():
 
         print(error_code, description, date, data)
 
+def read_failcode(register:int, name:str):
+    try:
+      result = instr.read_register(register)
+    except:
+      return None
+
+    error_code = result
+    description = __error_lists(error_code)
+    if error_code != 0: 
+        print("Detected error in %s: Code %d: \"%s\""%(name,error_code,description))
+    return description
 
 def __error_lists(code: int):
     errors = {
+        0: "No reported error",
         1: "Battery undervoltage alarm",
         2: "Battery discharge average current overcurrent (software protection)",
         3: "Battery not-connected alarm",

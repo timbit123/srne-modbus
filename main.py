@@ -25,9 +25,19 @@ def on_message(client, userdata, msg):
     payload = msg.payload.decode()
     topic = topic.split("/")  # remove the first two '/' in the topic
     topic = "/".join(topic[2:-1])  # reassemble the topic without leading '/'
-
+    if topic in mqtt_config:
+        if "topic_type" in mqtt_config[topic]:
+            if mqtt_config[topic]["topic_type"] == "button":
+                if "value" in mqtt_config[topic]:
+                    payload = mqtt_config[topic]["value"]
+                else:
+                    payload = 0
+        if mqtt_config[topic].get("dangerous", False):
+            if mqtt_config["inverter/enable_danger"]["last_value"] != "Enabled":
+                print(f"Received message: {msg.payload.decode()} but ignoring since inverter/enable_danger not Enabled")
+                return
     if topic in mqtt_set_config:
-        writing_queue.append((mqtt_set_config[topic], payload))
+        writing_queue.append((mqtt_set_config[topic], payload, topic))
 
     print(f"Received message: {msg.payload.decode()}")
 
@@ -68,15 +78,17 @@ for name, vals in mqtt_config.items():
         ] = f"{mqtt_topic}/{vals.get('topic_type', 'sensor')}/{vals['config']['command_topic']}/set"
         client.subscribe(vals["config"]["command_topic"])
         print(f"Subscribed to {vals['config']['command_topic']}")
+    
+    discovery_data = {
+        "device": device,
+        "uniq_id": field_name,
+        **{key: vals["config"][key] for key in vals["config"]},
+    }
+    if vals.get("topic_type", 'sensor') != "button":
+        discovery_data["state_topic"] = topic
 
-    json_data = json.dumps(
-        {
-            "device": device,
-            "state_topic": topic,
-            "uniq_id": field_name,
-            **{key: vals["config"][key] for key in vals["config"]},
-        }
-    )
+    json_data = json.dumps(discovery_data)
+
     client.publish(
         f"homeassistant/{vals.get('topic_type', 'sensor')}/{field_name}/config",
         json_data,
@@ -89,29 +101,39 @@ loop_sleep: float = (
 general_interval: float = (
     int(os.getenv("GENERAL_INTERVAL")) if os.getenv("GENERAL_INTERVAL") else 5000
 ) / 1000
+refresh_interval: float = (
+    int(os.getenv("REFRESH_INTERVAL")) if os.getenv("REFRESH_INTERVAL") else 5000
+) / 1000
 
 # Loop continuously sending data to Home Assistant
 client.loop_start()
-force_update = True
 while True:
 
     # check if we need to update values
     if len(writing_queue) > 0:
-        for set_fuction, payload in writing_queue:
-            if set_fuction(payload) != None:
-                #Force an update of all values, since some config items will affect multiple
-                force_update = True
+        for set_fuction, payload, topic in writing_queue:
+            returnval = set_fuction(payload) 
+            if returnval == "update_value":
+                print("Handling update_value for " + topic)
+                mqtt_config[topic]["last_value"] = payload
+            if returnval != None:
+                #print(topic + " last_update was " + str(mqtt_config[topic]["last_update"])) 
+                interval = vals.get("interval")
+                current_time = time.time()
+                mqtt_config[topic]["last_update"] = current_time - interval + refresh_interval 
+                #print(topic + " last_update is now " + str(mqtt_config[topic]["last_update"])) 
+
         writing_queue = []
         time.sleep(loop_sleep)
 
     for name, vals in mqtt_config.items():
-        if not vals.get("enabled", True):
+        if not vals.get("enabled", True) or vals.get('topic_type', 'sensor') == "button":
             continue
         # find a way to skip values depending the loop count in vals['loop_count']
         last_update = vals.get("last_update")
         interval = vals.get("interval")
         current_time = time.time()
-        if last_update is not None and force_update is not True:
+        if last_update is not None:
             if interval == -1:
                 continue
             if current_time - last_update <= interval:
@@ -134,7 +156,6 @@ while True:
             client.publish(topic, value)
         publishing_queue = []
 
-    force_update = False
     time.sleep(loop_sleep)
 
 client.loop_stop()

@@ -48,7 +48,9 @@ temperature_interval: float = (
 general_interval: float = (
     int(os.getenv("GENERAL_INTERVAL")) if os.getenv("GENERAL_INTERVAL") else 5000
 ) / 1000
-system_interval: int = -1  # will fetch data one time only
+system_interval: float = (
+    int(os.getenv("SYSTEM_INTERVAL")) if os.getenv("SYSTEM_INTERVAL") else 600000
+) / 1000
 
 mqtt_set_config: dict[str, any] = {
     "charging/current_limit": modbus.write_pv_charging_current_limit,
@@ -67,13 +69,17 @@ mqtt_set_config: dict[str, any] = {
     "charging/stop_charging_soc_limit": modbus.write_stop_charging_soc_set,
     "charging/total_charging_current_limit": modbus.write_total_charging_current_limit,
     "charging/stop_charging_current_limit": modbus.write_stop_charging_current_limit,
-    "inverter/power_saving": modbus.write_power_saving_mode,
     "charging/source_priority": modbus.write_charging_source_priority,
+    "charging/time_charge_enabled": modbus.write_time_charge_enabled,
+    "inverter/power_saving": modbus.write_power_saving_mode,
 #    "inverter/output_priority": modbus.write_output_priority,
     "inverter/hybrid_mode": modbus.write_hybrid_mode,
     "inverter/battery_priority": modbus.write_battery_discharge_enabled,
     "inverter/pv_priority": modbus.write_pv_power_priority_set,
-    "charging/time_charge_enabled": modbus.write_time_charge_enabled,
+    "inverter/enable_danger": lambda x: "update_value",
+    "inverter/reset": modbus.write_reset,
+    "inverter/clear_statistics": modbus.write_restore_factory_setting,
+    "inverter/clear_errors": modbus.write_restore_factory_setting,
 }
 
 mqtt_config: dict[str, dict[str, any]] = {
@@ -766,13 +772,10 @@ mqtt_config: dict[str, dict[str, any]] = {
     },
     "inverter/failcode0": {
         "enabled": True,
-        "value": modbus.read_register_value,
+        "value": modbus.read_failcode,
         "args":
             {
                 "register": 0x204,
-                "integer": True,
-                "format_str": "{:x}",
-                "prefix" : "0x"
             },
         "interval": inverter_interval,
         "last_update": None,
@@ -784,13 +787,10 @@ mqtt_config: dict[str, dict[str, any]] = {
     },
     "inverter/failcode1": {
         "enabled": True,
-        "value": modbus.read_register_value,
+        "value": modbus.read_failcode,
         "args":
             {
                 "register": 0x205,
-                "integer": True,
-                "format_str": "{:x}",
-                "prefix" : "0x"
             },
         "interval": inverter_interval,
         "last_update": None,
@@ -802,13 +802,10 @@ mqtt_config: dict[str, dict[str, any]] = {
     },
     "inverter/failcode2": {
         "enabled": True,
-        "value": modbus.read_register_value,
+        "value": modbus.read_failcode,
         "args":
             {
                 "register": 0x206,
-                "integer": True,
-                "format_str": "{:x}",
-                "prefix" : "0x"
             },
         "interval": inverter_interval,
         "last_update": None,
@@ -820,13 +817,10 @@ mqtt_config: dict[str, dict[str, any]] = {
     },
     "inverter/failcode3": {
         "enabled": True,
-        "value": modbus.read_register_value,
+        "value": modbus.read_failcode,
         "args":
             {
                 "register": 0x207,
-                "integer": True,
-                "format_str": "{:x}",
-                "prefix" : "0x"
             },
         "interval": inverter_interval,
         "last_update": None,
@@ -1068,6 +1062,39 @@ mqtt_config: dict[str, dict[str, any]] = {
             "icon": "mdi:current-ac",
             "unit_of_measurement": "A",
             "device_class": "current",
+        },
+    },
+    "inverter/auto_restart_on_overload": {
+        "enabled": True,
+        "value": modbus.read_auto_restart_on_overload,
+        "interval": general_interval,
+        "last_update": None,
+        "config": {
+            "name": "Auto Restart on Overload",
+            "icon": "mdi:alert-circle",
+            "entity_category": "diagnostic",
+        },
+    },
+    "inverter/auto_restart_on_overheat": {
+        "enabled": True,
+        "value": modbus.read_auto_restart_on_overheat,
+        "interval": general_interval,
+        "last_update": None,
+        "config": {
+            "name": "Auto Restart on Overheat",
+            "icon": "mdi:alert-circle",
+            "entity_category": "diagnostic",
+        },
+    },
+    "inverter/auto_bypass_on_overload": {
+        "enabled": True,
+        "value": modbus.read_bypass_on_overload,
+        "interval": general_interval,
+        "last_update": None,
+        "config": {
+            "name": "Auto Bypass on Overload",
+            "icon": "mdi:alert-circle",
+            "entity_category": "diagnostic",
         },
     },
     ############ Load ######################
@@ -1757,6 +1784,20 @@ mqtt_config: dict[str, dict[str, any]] = {
             "command_topic": "inverter/battery_priority",
         },
     },
+   "inverter/enable_danger": {
+        "value": lambda: 
+            (mqtt_config["inverter/enable_danger"]["last_value"]),
+        "interval": general_interval,
+        "last_update": None,
+        "topic_type": "select",
+        "last_value": "Disabled",
+        "config": {
+            "name": "Enable Dangerous Operations",
+            "icon": "mdi:export",
+            "options": ["Disabled", "Enabled"],
+            "command_topic": "inverter/enable_danger",
+        },
+    },
    "inverter/pv_priority": {
         "value": modbus.read_pv_power_priority_set,
         "interval": general_interval,
@@ -1767,6 +1808,36 @@ mqtt_config: dict[str, dict[str, any]] = {
             "icon": "mdi:export",
             "options": ["Load Priority", "Charging Priority", "Grid Priority"],
             "command_topic": "inverter/pv_priority",
+        },
+    },
+   "inverter/reset": {
+        "value": 1,
+        "topic_type": "button",
+        "dangerous": True,
+        "config": {
+            "name": "Reset Inverter",
+            "icon": "mdi:power-cycle",
+            "command_topic": "inverter/reset",
+        },
+    },
+   "inverter/clear_statistics": {
+        "value": 2,
+        "topic_type": "button",
+        "dangerous": True,
+        "config": {
+            "name": "Clear Statistics",
+            "icon": "mdi:power-cycle",
+            "command_topic": "inverter/clear_statistics",
+        },
+    },
+   "inverter/clear_errors": {
+        "value": 3,
+        "topic_type": "button",
+        "dangerous": True,
+        "config": {
+            "name": "Clear Errors",
+            "icon": "mdi:power-cycle",
+            "command_topic": "inverter/clear_errors",
         },
     },
    "charging/time_charge_enabled": {
