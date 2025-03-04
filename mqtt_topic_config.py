@@ -18,8 +18,8 @@ split_phase: int = int(os.getenv("SPLIT_PHASE")) if os.getenv("SPLIT_PHASE") els
 has_ambient_temperature: bool = (
     True if os.getenv("HAS_AMBIENT_TEMPERATURE") == "true" else False
 )
-pv_mpp_trackers: int = (
-    int(os.getenv("NB_MPP_TRACKERS")) if os.getenv("NB_MPP_TRACKERS") else 0
+pv_mppt_trackers: int = (
+    int(os.getenv("NB_MPPT_TRACKERS")) if os.getenv("NB_MPPT_TRACKERS") else 0
 )
 
 pv_interval: float = (
@@ -227,7 +227,7 @@ mqtt_config: dict[str, dict[str, any]] = {
     },
     ############ PV1 #####################
     "pv1/voltage": {
-        "enabled": pv_mpp_trackers >= 1,
+        "enabled": pv_mppt_trackers >= 1,
         "value": modbus.read_pv1_voltage,
         "interval": pv_interval,
         "last_update": None,
@@ -239,7 +239,7 @@ mqtt_config: dict[str, dict[str, any]] = {
         },
     },
     "pv1/current": {
-        "enabled": pv_mpp_trackers >= 1,
+        "enabled": pv_mppt_trackers >= 1,
         "value": modbus.read_pv1_current,
         "interval": pv_interval,
         "last_update": None,
@@ -251,7 +251,7 @@ mqtt_config: dict[str, dict[str, any]] = {
         },
     },
     "pv1/charge_power": {
-        "enabled": pv_mpp_trackers >= 1,
+        "enabled": pv_mppt_trackers >= 1,
         "value": modbus.read_pv1_charge_power,
         "interval": pv_interval,
         "last_update": None,
@@ -264,7 +264,7 @@ mqtt_config: dict[str, dict[str, any]] = {
     },
     ############ PV2 #####################
     "pv2/voltage": {
-        "enabled": pv_mpp_trackers >= 2,
+        "enabled": pv_mppt_trackers >= 2,
         "value": modbus.read_pv2_voltage,
         "interval": pv_interval,
         "last_update": None,
@@ -276,7 +276,7 @@ mqtt_config: dict[str, dict[str, any]] = {
         },
     },
     "pv2/current": {
-        "enabled": pv_mpp_trackers >= 2,
+        "enabled": pv_mppt_trackers >= 2,
         "value": modbus.read_pv2_current,
         "interval": pv_interval,
         "last_update": None,
@@ -288,7 +288,7 @@ mqtt_config: dict[str, dict[str, any]] = {
         },
     },
     "pv2/charge_power": {
-        "enabled": pv_mpp_trackers >= 2,
+        "enabled": pv_mppt_trackers >= 2,
         "value": modbus.read_pv2_charge_power,
         "interval": pv_interval,
         "last_update": None,
@@ -301,7 +301,7 @@ mqtt_config: dict[str, dict[str, any]] = {
     },
     ############ PV #####################
     "pv/power_priority": {
-        "enabled": pv_mpp_trackers >= 1,
+        "enabled": pv_mppt_trackers >= 1,
         "value": modbus.read_pv_power_priority_set,
         "interval": pv_interval,
         "last_update": None,
@@ -314,7 +314,7 @@ mqtt_config: dict[str, dict[str, any]] = {
         },
     },
     "pv/total_power": {
-        "enabled": pv_mpp_trackers >= 1,
+        "enabled": pv_mppt_trackers >= 1,
         "value": modbus.read_pv_total_power,
         "interval": pv_interval,
         "last_update": None,
@@ -326,7 +326,7 @@ mqtt_config: dict[str, dict[str, any]] = {
         },
     },
     "pv/charging_current": {
-        "enabled": pv_mpp_trackers >= 1,
+        "enabled": pv_mppt_trackers >= 1,
         "value": modbus.read_pv_charging_current,
         "interval": pv_interval,
         "last_update": None,
@@ -992,7 +992,7 @@ mqtt_config: dict[str, dict[str, any]] = {
     },
     ############ Charging Configuration #####################
     "charging/pv_current_limit": {
-        "enabled": pv_mpp_trackers >= 1,
+        "enabled": pv_mppt_trackers >= 1,
         "value": modbus.read_pv_charging_current_limit,
         "interval": general_interval,
         "last_update": None,
