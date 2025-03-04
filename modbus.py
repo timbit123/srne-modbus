@@ -1191,12 +1191,20 @@ def read_time_discharge_enabled():
 def read_pv_power_priority_set():
     result = instr.read_register(0xE039)
     priority_mode = {0: "Charging priority", 1: "Load priority"}
-    debug("PV Power Priority Set: " + priority_mode[result])
+    if result in priority_mode:
+        debug("PV Power Priority Set: " + priority_mode[result])
+        return priority_mode[result]
     return result
 
 
 def write_pv_power_priority_set(value: str):
-    instr.write_register(0xE039, int(value))
+    priority = {
+        "Charging priority": 0,
+        "Load priority": 1,
+    }
+    if value in priority:
+        int_value = priority[value]
+        instr.write_register(0xE039, int_value)
 
 
 #################### P07 User Setting Area for Inverter Parameters ##################

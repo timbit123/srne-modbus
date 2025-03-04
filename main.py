@@ -6,6 +6,8 @@ from dotenv import load_dotenv
 from modbus import debug
 from mqtt_topic_config import mqtt_config, device, mqtt_set_config
 
+mqtt_topic = os.getenv("MQTT_TOPIC")
+
 load_dotenv()
 
 
@@ -17,6 +19,7 @@ publishing_queue = []
 def on_connect(client, userdata, flags, rc):
     # Callback function for when the client connects to the MQTT server
     print(f"Connected with result code {rc}")
+    subscribe(client)
 
 
 def on_message(client, userdata, msg):
@@ -30,6 +33,35 @@ def on_message(client, userdata, msg):
         writing_queue.append((mqtt_set_config[topic], payload))
 
     print(f"Received message: {msg.payload.decode()}")
+
+
+def subscribe(client):
+    for name, vals in mqtt_config.items():
+        if not vals.get("enabled", True):
+            continue
+        topic = f"{mqtt_topic}/{vals.get('topic_type', 'sensor')}/{name}/state"
+        field_name = f"{mqtt_topic}-{str(name).replace('/','-')}"
+
+        if "command_topic" in vals["config"]:
+            vals["config"][
+                "command_topic"
+            ] = f"{mqtt_topic}/{vals.get('topic_type', 'sensor')}/{vals['config']['command_topic']}/set"
+            client.subscribe(vals["config"]["command_topic"])
+            print(f"Subscribed to {vals['config']['command_topic']}")
+
+        json_data = json.dumps(
+            {
+                "device": device,
+                "state_topic": topic,
+                "uniq_id": field_name,
+                **{key: vals["config"][key] for key in vals["config"]},
+            }
+        )
+        client.publish(
+            f"homeassistant/{vals.get('topic_type', 'sensor')}/{field_name}/config",
+            json_data,
+            retain=True,
+        )
 
 
 # Create an instance of the MQTT client
@@ -54,7 +86,6 @@ else:
 
 # Connect to the MQTT server
 client.connect(host, port)
-mqtt_topic = os.getenv("MQTT_TOPIC")
 
 for name, vals in mqtt_config.items():
     if not vals.get("enabled", True):
@@ -93,39 +124,44 @@ general_interval: float = (
 # Loop continuously sending data to Home Assistant
 client.loop_start()
 while True:
-
-    for name, vals in mqtt_config.items():
-        if not vals.get("enabled", True):
-            continue
-        # find a way to skip values depending the loop count in vals['loop_count']
-        last_update = vals.get("last_update")
-        interval = vals.get("interval")
-        current_time = time.time()
-        if last_update is not None:
-            if interval == -1:
+    if not client.is_connected:
+        client.reconnect()
+    try:
+        for name, vals in mqtt_config.items():
+            if not vals.get("enabled", True):
                 continue
-            if current_time - last_update <= interval:
-                continue
+            # find a way to skip values depending the loop count in vals['loop_count']
+            last_update = vals.get("last_update")
+            interval = vals.get("interval")
+            current_time = time.time()
+            if last_update is not None:
+                if interval == -1:
+                    continue
+                if current_time - last_update <= interval:
+                    continue
 
-        debug(f"updating {name}")
-        topic = f"{mqtt_topic}/{vals.get('topic_type', 'sensor')}/{name}/state"
-        value = vals["value"]()
-        mqtt_config[name]["last_update"] = current_time
-        mqtt_config[name]["last_value"] = value
-        publishing_queue.append((topic, value))
+            debug(f"updating {name}")
+            topic = f"{mqtt_topic}/{vals.get('topic_type', 'sensor')}/{name}/state"
+            value = vals["value"]()
+            mqtt_config[name]["last_update"] = current_time
+            mqtt_config[name]["last_value"] = value
+            publishing_queue.append((topic, value))
 
-    time.sleep(loop_sleep)
+        time.sleep(loop_sleep)
 
-    if len(publishing_queue) > 0:
-        for topic, value in publishing_queue:
-            client.publish(topic, value)
-        publishing_queue = []
+        if len(publishing_queue) > 0:
+            for topic, value in publishing_queue:
+                client.publish(topic, value)
+            publishing_queue = []
 
-    # check if we need to update values
-    if len(writing_queue) > 0:
-        for set_fuction, payload in writing_queue:
-            set_fuction(payload)
-        writing_queue = []
-        time.sleep(0.1)
+        # check if we need to update values
+        if len(writing_queue) > 0:
+            for set_fuction, payload in writing_queue:
+                set_fuction(payload)
+            writing_queue = []
+            time.sleep(0.1)
+    except Exception as e:
+        print(e)
+        time.sleep(5)
 
 client.loop_stop()

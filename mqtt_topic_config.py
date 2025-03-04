@@ -67,6 +67,7 @@ mqtt_set_config: dict[str, any] = {
     "inverter/power_saving": modbus.write_power_saving_mode,
     "inverter/output_priority": modbus.write_output_priority,
     "inverter/battery_priority": modbus.write_battery_discharge_enabled,
+    "pv/power_priority": modbus.write_pv_power_priority_set,
 }
 
 mqtt_config: dict[str, dict[str, any]] = {
@@ -299,6 +300,19 @@ mqtt_config: dict[str, dict[str, any]] = {
         },
     },
     ############ PV #####################
+    "pv/power_priority": {
+        "enabled": pv_mpp_trackers >= 1,
+        "value": modbus.read_pv_power_priority_set,
+        "interval": pv_interval,
+        "last_update": None,
+        "topic_type": "select",
+        "config": {
+            "name": "PV Power Priority",
+            "icon": "mdi:export",
+            "options": ["Charging priority", "Load priority"],
+            "command_topic": "pv/power_priority",
+        },
+    },
     "pv/total_power": {
         "enabled": pv_mpp_trackers >= 1,
         "value": modbus.read_pv_total_power,
@@ -1375,7 +1389,7 @@ mqtt_config: dict[str, dict[str, any]] = {
             "device_class": "energy",
         },
     },
-        "statistics/total_pv_generated_energy": {
+    "statistics/total_pv_generated_energy": {
         "value": modbus.read_total_pv_generated_energy_total,
         "interval": statistics_interval,
         "last_update": None,
@@ -1385,5 +1399,5 @@ mqtt_config: dict[str, dict[str, any]] = {
             "unit_of_measurement": "kWh",
             "device_class": "energy",
         },
-    }
+    },
 }
