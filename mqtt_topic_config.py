@@ -6,10 +6,10 @@ load_dotenv()
 
 device = {
     "name": os.getenv("MQTT_TOPIC"),
-    "identifiers": [modbus.read_register_str(0x035, "Serial Number", clean = True)],
+    "identifiers": [modbus.read_register_str(0x035, "Serial Number", clean=True)],
     "manufacturer": os.getenv("DEVICE_MANUFACTURER"),
-    "serial_number": modbus.read_register_str(0x035, "Serial Number", clean = True),
-    "model": modbus.read_register_value(0x01B, "Model", integer = True),
+    "serial_number": modbus.read_register_str(0x035, "Serial Number", clean=True),
+    "model": modbus.read_register_value(0x01B, "Model", integer=True),
 }
 
 system_enabled: bool = True if os.getenv("PUBLISH_SYSTEM") == "true" else False
@@ -75,7 +75,7 @@ mqtt_set_config: dict[str, any] = {
     "charging/bms_protocol": modbus.write_bms_protocol,
     "charging/time_charge_enabled": modbus.write_time_charge_enabled,
     "inverter/power_saving": modbus.write_power_saving_mode,
-#    "inverter/output_priority": modbus.write_output_priority,
+    #    "inverter/output_priority": modbus.write_output_priority,
     "inverter/hybrid_mode": modbus.write_hybrid_mode,
     "inverter/battery_priority": modbus.write_battery_discharge_enabled,
     "pv/power_priority": modbus.write_pv_power_priority_set,
@@ -90,7 +90,7 @@ mqtt_config: dict[str, dict[str, any]] = {
         "enabled": system_enabled,
         "value": modbus.read_register_str,
         "args": {
-            "register": 0x021, 
+            "register": 0x021,
         },
         "last_update": None,
         "interval": system_interval,
@@ -103,10 +103,7 @@ mqtt_config: dict[str, dict[str, any]] = {
     "system/serial_number": {
         "enabled": system_enabled,
         "value": modbus.read_register_str,
-        "args": {
-            "register": 0x035, 
-            "clean" : True
-        },
+        "args": {"register": 0x035, "clean": True},
         "last_update": None,
         "interval": system_interval,
         "config": {
@@ -118,10 +115,7 @@ mqtt_config: dict[str, dict[str, any]] = {
     "system/read_minor_version": {
         "enabled": system_enabled,
         "value": modbus.read_register_value,
-        "args": {
-            "register": 0x00A, 
-            "integer": True
-        },
+        "args": {"register": 0x00A, "integer": True},
         "last_update": None,
         "interval": system_interval,
         "config": {
@@ -133,11 +127,7 @@ mqtt_config: dict[str, dict[str, any]] = {
     "system/app_version": {
         "enabled": system_enabled,
         "value": modbus.read_register_value,
-        "args": {
-            "register": 0x014, 
-            "scale" : 1e-2,
-            "prefix" : "v"
-        },
+        "args": {"register": 0x014, "scale": 1e-2, "prefix": "v"},
         "last_update": None,
         "interval": system_interval,
         "config": {
@@ -149,11 +139,7 @@ mqtt_config: dict[str, dict[str, any]] = {
     "system/bootloader_version": {
         "enabled": system_enabled,
         "value": modbus.read_register_value,
-        "args": {
-            "register": 0x015, 
-            "scale" : 1e-2,
-            "prefix" : "v"
-        },
+        "args": {"register": 0x015, "scale": 1e-2, "prefix": "v"},
         "last_update": None,
         "interval": system_interval,
         "config": {
@@ -165,11 +151,7 @@ mqtt_config: dict[str, dict[str, any]] = {
     "system/control_panel_version": {
         "enabled": system_enabled,
         "value": modbus.read_register_value,
-        "args": {
-            "register": 0x016, 
-            "scale" : 1e-2,
-            "prefix" : "v"
-        },
+        "args": {"register": 0x016, "scale": 1e-2, "prefix": "v"},
         "last_update": None,
         "interval": system_interval,
         "config": {
@@ -181,11 +163,7 @@ mqtt_config: dict[str, dict[str, any]] = {
     "system/power_amplifier_version": {
         "enabled": system_enabled,
         "value": modbus.read_register_value,
-        "args": {
-            "register": 0x017, 
-            "scale" : 1e-2,
-            "prefix" : "v"
-        },
+        "args": {"register": 0x017, "scale": 1e-2, "prefix": "v"},
         "last_update": None,
         "interval": system_interval,
         "config": {
@@ -197,11 +175,7 @@ mqtt_config: dict[str, dict[str, any]] = {
     "system/rs485_version": {
         "enabled": system_enabled,
         "value": modbus.read_register_value,
-        "args": {
-            "register": 0x01C, 
-            "scale" : 1e-2,
-            "prefix" : "v"
-        },
+        "args": {"register": 0x01C, "scale": 1e-2, "prefix": "v"},
         "last_update": None,
         "interval": system_interval,
         "config": {
@@ -213,10 +187,7 @@ mqtt_config: dict[str, dict[str, any]] = {
     "system/model": {
         "enabled": system_enabled,
         "value": modbus.read_register_value,
-        "args": {
-            "register": 0x01B, 
-            "integer" : True
-        },
+        "args": {"register": 0x01B, "integer": True},
         "last_update": None,
         "interval": system_interval,
         "config": {
@@ -228,10 +199,7 @@ mqtt_config: dict[str, dict[str, any]] = {
     "system/rs485_address": {
         "enabled": system_enabled,
         "value": modbus.read_register_value,
-        "args": {
-            "register": 0x01A, 
-            "integer" : True
-        },
+        "args": {"register": 0x01A, "integer": True},
         "last_update": None,
         "interval": system_interval,
         "config": {
@@ -341,9 +309,8 @@ mqtt_config: dict[str, dict[str, any]] = {
             "device_class": "current",
         },
     },
-
     "pv1/power": {
-        "enabled": pv_mpp_trackers >= 1,
+        "enabled": pv_mppt_trackers >= 1,
         "value": modbus.read_pv1_charge_power,
         "interval": pv_interval,
         "last_update": None,
@@ -379,9 +346,8 @@ mqtt_config: dict[str, dict[str, any]] = {
             "device_class": "current",
         },
     },
-
     "pv2/power": {
-        "enabled": pv_mpp_trackers >= 2,
+        "enabled": pv_mppt_trackers >= 2,
         "value": modbus.read_pv2_charge_power,
         "interval": pv_interval,
         "last_update": None,
@@ -393,7 +359,6 @@ mqtt_config: dict[str, dict[str, any]] = {
         },
     },
     ############ PV #####################
-
     "pv/total_power": {
         "enabled": pv_mppt_trackers >= 1,
         "value": modbus.read_pv_total_power,
@@ -445,7 +410,7 @@ mqtt_config: dict[str, dict[str, any]] = {
             "device_class": "current",
         },
     },
-  #If you have CTs, this will report CT power, but othwerwise reports grid power, can get grid power in seperate endpoint by subtracting home load power which will be 0 with no CTs
+    # If you have CTs, this will report CT power, but othwerwise reports grid power, can get grid power in seperate endpoint by subtracting home load power which will be 0 with no CTs
     "ct/power_a": {
         "enabled": split_phase >= 1,
         "value": modbus.read_grid_active_power_a,
@@ -462,10 +427,7 @@ mqtt_config: dict[str, dict[str, any]] = {
     "home/power_a": {
         "enabled": split_phase >= 1,
         "value": modbus.read_register_value,
-        "args": {
-            "register": 0x240,
-            "unit": "W"
-        },
+        "args": {"register": 0x240, "unit": "W"},
         "interval": grid_interval,
         "last_update": None,
         "last_value": 0,
@@ -544,13 +506,12 @@ mqtt_config: dict[str, dict[str, any]] = {
             "device_class": "current",
         },
     },
-#If you have CTs, this will report CT power, but othwerwise reports grid power, can get grid power in seperate endpoint by subtracting home load power which will be 0 with no CTs
+    # If you have CTs, this will report CT power, but othwerwise reports grid power, can get grid power in seperate endpoint by subtracting home load power which will be 0 with no CTs
     "ct/power_b": {
         "enabled": split_phase >= 2,
         "value": modbus.read_grid_active_power_b,
         "interval": grid_interval,
         "last_update": None,
-
         "last_value": 0,
         "config": {
             "name": "CT Power B",
@@ -559,14 +520,10 @@ mqtt_config: dict[str, dict[str, any]] = {
             "device_class": "power",
         },
     },
-
     "home/power_b": {
         "enabled": split_phase >= 2,
         "value": modbus.read_register_value,
-        "args": {
-            "register": 0x241,
-            "unit": "W"
-        },
+        "args": {"register": 0x241, "unit": "W"},
         "interval": grid_interval,
         "last_update": None,
         "last_value": 0,
@@ -633,13 +590,12 @@ mqtt_config: dict[str, dict[str, any]] = {
             "device_class": "current",
         },
     },
-#If you have CTs, this will report CT power, but othwerwise reports grid power, can get grid power in seperate endpoint by subtracting home load power which will be 0 with no CTs
+    # If you have CTs, this will report CT power, but othwerwise reports grid power, can get grid power in seperate endpoint by subtracting home load power which will be 0 with no CTs
     "ct/power_c": {
         "enabled": split_phase >= 3,
         "value": modbus.read_grid_active_power_c,
         "interval": grid_interval,
         "last_update": None,
-
         "last_value": 0,
         "config": {
             "name": "CT Power C",
@@ -651,10 +607,7 @@ mqtt_config: dict[str, dict[str, any]] = {
     "home/power_c": {
         "enabled": split_phase >= 3,
         "value": modbus.read_register_value,
-        "args": {
-            "register": 0x242,
-            "unit": "W"
-        },
+        "args": {"register": 0x242, "unit": "W"},
         "interval": grid_interval,
         "last_update": None,
         "last_value": 0,
@@ -767,13 +720,12 @@ mqtt_config: dict[str, dict[str, any]] = {
     "inverter/error": {
         "enabled": True,
         "value": modbus.read_register_value,
-        "args":
-            {
-                "register": 0x200,
-                "integer": True,
-                "format_str": "{:x}",
-                "prefix" : "0x"
-            },
+        "args": {
+            "register": 0x200,
+            "integer": True,
+            "format_str": "{:x}",
+            "prefix": "0x",
+        },
         "interval": inverter_interval,
         "last_update": None,
         "config": {
@@ -785,10 +737,9 @@ mqtt_config: dict[str, dict[str, any]] = {
     "inverter/failcode0": {
         "enabled": True,
         "value": modbus.read_failcode,
-        "args":
-            {
-                "register": 0x204,
-            },
+        "args": {
+            "register": 0x204,
+        },
         "interval": inverter_interval,
         "last_update": None,
         "config": {
@@ -800,10 +751,9 @@ mqtt_config: dict[str, dict[str, any]] = {
     "inverter/failcode1": {
         "enabled": True,
         "value": modbus.read_failcode,
-        "args":
-            {
-                "register": 0x205,
-            },
+        "args": {
+            "register": 0x205,
+        },
         "interval": inverter_interval,
         "last_update": None,
         "config": {
@@ -815,10 +765,9 @@ mqtt_config: dict[str, dict[str, any]] = {
     "inverter/failcode2": {
         "enabled": True,
         "value": modbus.read_failcode,
-        "args":
-            {
-                "register": 0x206,
-            },
+        "args": {
+            "register": 0x206,
+        },
         "interval": inverter_interval,
         "last_update": None,
         "config": {
@@ -830,10 +779,9 @@ mqtt_config: dict[str, dict[str, any]] = {
     "inverter/failcode3": {
         "enabled": True,
         "value": modbus.read_failcode,
-        "args":
-            {
-                "register": 0x207,
-            },
+        "args": {
+            "register": 0x207,
+        },
         "interval": inverter_interval,
         "last_update": None,
         "config": {
@@ -844,12 +792,11 @@ mqtt_config: dict[str, dict[str, any]] = {
     },
     "inverter/grid_on_remain_time": {
         "enabled": True,
-        #"value": modbus.read_grid_on_remain_time_state,
+        # "value": modbus.read_grid_on_remain_time_state,
         "value": modbus.read_register_value,
-        "args":
-            {
-                "register": 0x20F,
-            },
+        "args": {
+            "register": 0x20F,
+        },
         "interval": inverter_interval,
         "last_update": None,
         "config": {
@@ -1379,7 +1326,7 @@ mqtt_config: dict[str, dict[str, any]] = {
             "max": 200,
             "step": 0.1,
             "command_topic": "charging/pv_current_limit",
-            "mode:": "box"
+            "mode:": "box",
         },
     },
     "charging/rebulk_voltage": {
@@ -1398,7 +1345,7 @@ mqtt_config: dict[str, dict[str, any]] = {
             "max": 14.4 * modbus.battery_rate,
             "step": 0.1,
             "command_topic": "charging/rebulk_voltage",
-            "mode:": "box"
+            "mode:": "box",
         },
     },
     "charging/voltage_limit": {
@@ -1417,7 +1364,7 @@ mqtt_config: dict[str, dict[str, any]] = {
             "max": 14.6 * modbus.battery_rate,
             "step": 0.1,
             "command_topic": "charging/voltage_limit",
-            "mode:": "box"
+            "mode:": "box",
         },
     },
     "charging/overvoltage_limit": {
@@ -1436,7 +1383,7 @@ mqtt_config: dict[str, dict[str, any]] = {
             "max": 15.5 * modbus.battery_rate,
             "step": 0.1,
             "command_topic": "charging/overvoltage_limit",
-            "mode:": "box"
+            "mode:": "box",
         },
     },
     "charging/equalization_voltage": {
@@ -1542,8 +1489,8 @@ mqtt_config: dict[str, dict[str, any]] = {
             "name": "Bulk Charge Time",
             "icon": "mdi:clock",
             "mode": "box",
-            "min": 10, 
-            "max": 900, 
+            "min": 10,
+            "max": 900,
             "step": 1,
             "entity_category": "config",
             "command_topic": "charging/bulk_charge_time",
@@ -1615,7 +1562,7 @@ mqtt_config: dict[str, dict[str, any]] = {
             "max": 15.5 * modbus.battery_rate,
             "step": 0.1,
             "command_topic": "charging/overdischarge_return_voltage",
-            "mode:": "box"
+            "mode:": "box",
         },
     },
     "charging/undervoltage_warning_voltage": {
@@ -1634,7 +1581,7 @@ mqtt_config: dict[str, dict[str, any]] = {
             "max": 15.5 * modbus.battery_rate,
             "step": 0.1,
             "command_topic": "charging/undervoltage_warning_voltage",
-            "mode:": "box"
+            "mode:": "box",
         },
     },
     "charging/overdischarge_limit": {
@@ -1653,7 +1600,7 @@ mqtt_config: dict[str, dict[str, any]] = {
             "max": 15.5 * modbus.battery_rate,
             "step": 0.1,
             "command_topic": "charging/undervoltage_warning_voltage",
-            "mode:": "box"
+            "mode:": "box",
         },
     },
     "charging/discharge_limit_voltage": {
@@ -1672,7 +1619,7 @@ mqtt_config: dict[str, dict[str, any]] = {
             "max": 15.5 * modbus.battery_rate,
             "step": 0.1,
             "command_topic": "charging/discharge_limit_voltage",
-            "mode:": "box"
+            "mode:": "box",
         },
     },
     "charging/stop_discharge_soc_limit": {
@@ -1689,7 +1636,7 @@ mqtt_config: dict[str, dict[str, any]] = {
             "max": 100,
             "step": 1,
             "command_topic": "charging/stop_discharge_soc_limit",
-            "mode:": "box"
+            "mode:": "box",
         },
     },
     "charging/stop_grid_discharge_soc_limit": {
@@ -1706,7 +1653,7 @@ mqtt_config: dict[str, dict[str, any]] = {
             "max": 100,
             "step": 1,
             "command_topic": "charging/stop_grid_discharge_soc_limit",
-            "mode:": "box"
+            "mode:": "box",
         },
     },
     "charging/restart_grid_discharge_soc_limit": {
@@ -1723,7 +1670,7 @@ mqtt_config: dict[str, dict[str, any]] = {
             "max": 100,
             "step": 1,
             "command_topic": "charging/restart_grid_discharge_soc_limit",
-            "mode:": "box"
+            "mode:": "box",
         },
     },
     "charging/stop_charging_soc_limit": {
@@ -1740,7 +1687,7 @@ mqtt_config: dict[str, dict[str, any]] = {
             "max": 100,
             "step": 1,
             "command_topic": "charging/stop_charging_soc_limit",
-            "mode:": "box"
+            "mode:": "box",
         },
     },
     "charging/total_charging_current_limit": {
@@ -1758,7 +1705,7 @@ mqtt_config: dict[str, dict[str, any]] = {
             "max": 200,
             "step": 0.1,
             "command_topic": "charging/total_charging_current_limit",
-            "mode:": "box"
+            "mode:": "box",
         },
     },
     "charging/stop_charging_current_limit": {
@@ -1776,7 +1723,7 @@ mqtt_config: dict[str, dict[str, any]] = {
             "max": 10,
             "step": 0.1,
             "command_topic": "charging/stop_charging_current_limit",
-            "mode:": "box"
+            "mode:": "box",
         },
     },
     "charging/equalization_enable": {
@@ -1821,19 +1768,19 @@ mqtt_config: dict[str, dict[str, any]] = {
             "command_topic": "inverter/power_saving",
         },
     },
-#    "inverter/output_priority": {
-#        "value": modbus.read_output_priority,
-#        "interval": general_interval,
-#        "last_update": None,
-#        "topic_type": "select",
-#        "config": {
-#            "name": "Output Priority",
-#            "icon": "mdi:export",
-#            "options": ["Solar First", "Utility First", "Solar/Battery/Utility"],
-#            "command_topic": "inverter/output_priority",
-#        },
-#    },
-   "inverter/hybrid_mode": {
+    #    "inverter/output_priority": {
+    #        "value": modbus.read_output_priority,
+    #        "interval": general_interval,
+    #        "last_update": None,
+    #        "topic_type": "select",
+    #        "config": {
+    #            "name": "Output Priority",
+    #            "icon": "mdi:export",
+    #            "options": ["Solar First", "Utility First", "Solar/Battery/Utility"],
+    #            "command_topic": "inverter/output_priority",
+    #        },
+    #    },
+    "inverter/hybrid_mode": {
         "value": modbus.read_hybrid_mode,
         "interval": general_interval,
         "last_update": None,
@@ -1862,9 +1809,8 @@ mqtt_config: dict[str, dict[str, any]] = {
             "command_topic": "inverter/battery_priority",
         },
     },
-   "inverter/enable_danger": {
-        "value": lambda: 
-            (mqtt_config["inverter/enable_danger"]["last_value"]),
+    "inverter/enable_danger": {
+        "value": lambda: (mqtt_config["inverter/enable_danger"]["last_value"]),
         "interval": general_interval,
         "last_update": None,
         "topic_type": "select",
@@ -1876,7 +1822,7 @@ mqtt_config: dict[str, dict[str, any]] = {
             "command_topic": "inverter/enable_danger",
         },
     },
-   "pv/power_priority": {
+    "pv/power_priority": {
         "enabled": pv_mppt_trackers >= 1,
         "value": modbus.read_pv_power_priority_set,
         "interval": general_interval,
@@ -1889,7 +1835,7 @@ mqtt_config: dict[str, dict[str, any]] = {
             "command_topic": "pv/power_priority",
         },
     },
-   "inverter/reset": {
+    "inverter/reset": {
         "value": 1,
         "topic_type": "button",
         "dangerous": True,
@@ -1899,7 +1845,7 @@ mqtt_config: dict[str, dict[str, any]] = {
             "command_topic": "inverter/reset",
         },
     },
-   "inverter/clear_statistics": {
+    "inverter/clear_statistics": {
         "value": 2,
         "topic_type": "button",
         "dangerous": True,
@@ -1909,7 +1855,7 @@ mqtt_config: dict[str, dict[str, any]] = {
             "command_topic": "inverter/clear_statistics",
         },
     },
-   "inverter/clear_errors": {
+    "inverter/clear_errors": {
         "value": 3,
         "topic_type": "button",
         "dangerous": True,
@@ -1919,7 +1865,7 @@ mqtt_config: dict[str, dict[str, any]] = {
             "command_topic": "inverter/clear_errors",
         },
     },
-   "charging/time_charge_enabled": {
+    "charging/time_charge_enabled": {
         "value": modbus.read_time_charge_enabled,
         "interval": general_interval,
         "last_update": None,

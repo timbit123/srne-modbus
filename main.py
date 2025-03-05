@@ -37,7 +37,9 @@ def on_message(client, userdata, msg):
                     payload = 0
         if mqtt_config[topic].get("dangerous", False):
             if mqtt_config["inverter/enable_danger"]["last_value"] != "Enabled":
-                print(f"Received message: {msg.payload.decode()} but ignoring since inverter/enable_danger not Enabled")
+                print(
+                    f"Received message: {msg.payload.decode()} but ignoring since inverter/enable_danger not Enabled"
+                )
                 return
     if topic in mqtt_set_config:
         writing_queue.append((mqtt_set_config[topic], payload, topic))
@@ -59,14 +61,16 @@ def subscribe(client):
             client.subscribe(vals["config"]["command_topic"])
             print(f"Subscribed to {vals['config']['command_topic']}")
 
-        json_data = json.dumps(
-            {
-                "device": device,
-                "state_topic": topic,
-                "uniq_id": field_name,
-                **{key: vals["config"][key] for key in vals["config"]},
-            }
-        )
+        discovery_data = {
+            "device": device,
+            "uniq_id": field_name,
+            **{key: vals["config"][key] for key in vals["config"]},
+        }
+        if vals.get("topic_type", "sensor") != "button":
+            discovery_data["state_topic"] = topic
+
+        json_data = json.dumps(discovery_data)
+
         client.publish(
             f"homeassistant/{vals.get('topic_type', 'sensor')}/{field_name}/config",
             json_data,
@@ -97,35 +101,6 @@ else:
 # Connect to the MQTT server
 client.connect(host, port)
 
-for name, vals in mqtt_config.items():
-    if not vals.get("enabled", True):
-        continue
-    topic = f"{mqtt_topic}/{vals.get('topic_type', 'sensor')}/{name}/state"
-    field_name = f"{mqtt_topic}-{str(name).replace('/','-')}"
-
-    if "command_topic" in vals["config"]:
-        vals["config"][
-            "command_topic"
-        ] = f"{mqtt_topic}/{vals.get('topic_type', 'sensor')}/{vals['config']['command_topic']}/set"
-        client.subscribe(vals["config"]["command_topic"])
-        print(f"Subscribed to {vals['config']['command_topic']}")
-    
-    discovery_data = {
-        "device": device,
-        "uniq_id": field_name,
-        **{key: vals["config"][key] for key in vals["config"]},
-    }
-    if vals.get("topic_type", 'sensor') != "button":
-        discovery_data["state_topic"] = topic
-
-    json_data = json.dumps(discovery_data)
-
-    client.publish(
-        f"homeassistant/{vals.get('topic_type', 'sensor')}/{field_name}/config",
-        json_data,
-        retain=True,
-    )
-
 loop_sleep: float = (
     int(os.getenv("LOOP_SLEEP")) if os.getenv("LOOP_SLEEP") else 200
 ) / 1000
@@ -139,29 +114,33 @@ refresh_interval: float = (
 # Loop continuously sending data to Home Assistant
 client.loop_start()
 while True:
-  
     if not client.is_connected:
         client.reconnect()
     try:
         # check if we need to update values
         if len(writing_queue) > 0:
             for set_fuction, payload, topic in writing_queue:
-                returnval = set_fuction(payload) 
+                returnval = set_fuction(payload)
                 if returnval == "update_value":
                     print("Handling update_value for " + topic)
                     mqtt_config[topic]["last_value"] = payload
                 if returnval != None:
-                    #print(topic + " last_update was " + str(mqtt_config[topic]["last_update"])) 
+                    # print(topic + " last_update was " + str(mqtt_config[topic]["last_update"]))
                     interval = vals.get("interval")
                     current_time = time.time()
-                    mqtt_config[topic]["last_update"] = current_time - interval + refresh_interval 
-                    #print(topic + " last_update is now " + str(mqtt_config[topic]["last_update"])) 
+                    mqtt_config[topic]["last_update"] = (
+                        current_time - interval + refresh_interval
+                    )
+                    # print(topic + " last_update is now " + str(mqtt_config[topic]["last_update"]))
 
             writing_queue = []
             time.sleep(loop_sleep)
 
         for name, vals in mqtt_config.items():
-            if not vals.get("enabled", True) or vals.get('topic_type', 'sensor') == "button":
+            if (
+                not vals.get("enabled", True)
+                or vals.get("topic_type", "sensor") == "button"
+            ):
                 continue
             # find a way to skip values depending the loop count in vals['loop_count']
             last_update = vals.get("last_update")
@@ -175,7 +154,7 @@ while True:
 
             debug(f"updating {name}")
             topic = f"{mqtt_topic}/{vals.get('topic_type', 'sensor')}/{name}/state"
-            if "args" in vals:  
+            if "args" in vals:
                 vals["args"]["name"] = vals["config"]["name"]
                 value = vals["value"](**vals["args"])
             else:
@@ -189,10 +168,10 @@ while True:
             for topic, value in publishing_queue:
                 client.publish(topic, value)
             publishing_queue = []
-      
+
         time.sleep(loop_sleep)
-        
-     except Exception as e:
+
+    except Exception as e:
         print(e)
         time.sleep(5)
 
