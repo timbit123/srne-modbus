@@ -1,6 +1,7 @@
 import os
 import minimalmodbus
 import traceback
+import struct
 from datetime import datetime
 from dotenv import load_dotenv
 
@@ -682,6 +683,24 @@ def read_grid_apparent_power_c():
     except:
       return None
     debug("Grid Apparent Power C: " + str(result) + "VA")
+    return result
+
+
+def read_home_load_active_power_a():
+    result = instr.read_register(0x240)
+    debug("Home Load Active Power A: " + str(result) + "W")
+    return result
+
+
+def read_home_load_active_power_b():
+    result = instr.read_register(0x241)
+    debug("Home Load Active Power B: " + str(result) + "W")
+    return result
+
+
+def read_home_load_active_power_c():
+    result = instr.read_register(0x242)
+    debug("Home Load Active Power C: " + str(result) + "W")
     return result
 
 
@@ -1730,6 +1749,7 @@ def write_pv_power_priority_set(value: str):
         return None
     return True
 
+
 #################### P07 User Setting Area for Inverter Parameters ##################
 def read_rs485_address_set():
     try:
@@ -2235,12 +2255,13 @@ def read_total_load_consume_from_line_last_7_days():
 
 
 def read_total_last_day_energy_statistics():
+
     try:
-      result = instr.read_long(0xF02A, byteorder=1)
+      result = instr.read_long(0xF02A, byteorder=minimalmodbus.BYTEORDER_LITTLE_SWAP)
     except:
       return None
     result = result / 10
-    debug("Total Last Day Energy Statistics : " + str(result) + "kWh")
+    debug("Total Last Day Energy Statistics: " + str(result) + "kWh")
     return result
 
 
@@ -2304,10 +2325,11 @@ def read_total_operating_days():
 
 def read_total_grid_energy_total():
     try:
-      result = instr.read_long(0xF032, byteorder=1)
+      result = instr.read_long(0xF032, byteorder=minimalmodbus.BYTEORDER_LITTLE_SWAP)
     except:
       return None
     debug(result)
+
     result = result / 10
     debug("Total Grid Energy: " + str(result) + "kWh")
     return result
@@ -2315,7 +2337,7 @@ def read_total_grid_energy_total():
 
 def read_total_battery_charging_total():
     try:
-      result = instr.read_long(0xF034, byteorder=1)
+      result = instr.read_long(0xF034, byteorder=minimalmodbus.BYTEORDER_LITTLE_SWAP)
     except:
       return None
     result = result
@@ -2324,8 +2346,10 @@ def read_total_battery_charging_total():
 
 
 def read_total_battery_discharging_total():
+
     try:
-      result = instr.read_long(0xF036, byteorder=1)
+      result = instr.read_long(0xF036, byteorder=minimalmodbus.BYTEORDER_LITTLE_SWAP)
+      result = result / 10
     except:
       return None
     result = result
@@ -2334,18 +2358,20 @@ def read_total_battery_discharging_total():
 
 
 def read_total_pv_generated_energy_total():
+
     try:
-      result = instr.read_long(0xF038, byteorder=1)
+      # Read two registers (4 bytes) starting at F038
+      result = instr.read_long(0xF038, byteorder=minimalmodbus.BYTEORDER_LITTLE_SWAP)
     except:
       return None
     result = result / 10
-    debug("Total PV Generated Energy: " + str(result) + "kWh")
+    debug(f"Total PV Generated Energy: {result} kWh")
     return result
 
 
 def read_total_load_consumption_total():
     try:
-      result = instr.read_long(0xF03A, byteorder=1)
+      result = instr.read_long(0xF03A, byteorder=minimalmodbus.BYTEORDER_LITTLE_SWAP)
     except:
       return None
     result = result / 10
@@ -2430,16 +2456,16 @@ def read_total_last_equalization_charge_time():
 
 def read_total_grid_charged_total():
     try:
-      result = instr.read_long(0xF046, byteorder=1)
+      result = instr.read_long(0xF046, byteorder=minimalmodbus.BYTEORDER_LITTLE_SWAP)
     except:
       return None
     debug("Total Grid Charged Total: " + str(result) + "Ah")
     return result
 
 
-def read_total_grid_consumed_today():
+def read_total_grid_consumed_total():
     try:
-      result = instr.read_long(0xF048, byteorder=1)
+      result = instr.read_long(0xF048, byteorder=minimalmodbus.BYTEORDER_LITTLE_SWAP)
     except:
       return None
     result = result / 10

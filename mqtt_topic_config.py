@@ -18,8 +18,8 @@ split_phase: int = int(os.getenv("SPLIT_PHASE")) if os.getenv("SPLIT_PHASE") els
 has_ambient_temperature: bool = (
     True if os.getenv("HAS_AMBIENT_TEMPERATURE") == "true" else False
 )
-pv_mpp_trackers: int = (
-    int(os.getenv("NB_MPP_TRACKERS")) if os.getenv("NB_MPP_TRACKERS") else 0
+pv_mppt_trackers: int = (
+    int(os.getenv("NB_MPPT_TRACKERS")) if os.getenv("NB_MPPT_TRACKERS") else 0
 )
 
 pv_interval: float = (
@@ -53,7 +53,7 @@ system_interval: float = (
 ) / 1000
 
 mqtt_set_config: dict[str, any] = {
-    "charging/current_limit": modbus.write_pv_charging_current_limit,
+    "charging/pv_current_limit": modbus.write_pv_charging_current_limit,
     "charging/voltage_limit": modbus.write_battery_charge_limit_voltage,
     "charging/overvoltage_limit": modbus.write_battery_overvoltage_protection_voltage,
     "charging/bulk_charge_time": modbus.write_battery_bulk_charge_time,
@@ -78,7 +78,7 @@ mqtt_set_config: dict[str, any] = {
 #    "inverter/output_priority": modbus.write_output_priority,
     "inverter/hybrid_mode": modbus.write_hybrid_mode,
     "inverter/battery_priority": modbus.write_battery_discharge_enabled,
-    "inverter/pv_priority": modbus.write_pv_power_priority_set,
+    "pv/power_priority": modbus.write_pv_power_priority_set,
     "inverter/enable_danger": lambda x: "update_value",
     "inverter/reset": modbus.write_reset,
     "inverter/clear_statistics": modbus.write_restore_factory_setting,
@@ -318,7 +318,7 @@ mqtt_config: dict[str, dict[str, any]] = {
     },
     ############ PV1 #####################
     "pv1/voltage": {
-        "enabled": pv_mpp_trackers >= 1,
+        "enabled": pv_mppt_trackers >= 1,
         "value": modbus.read_pv1_voltage,
         "interval": pv_interval,
         "last_update": None,
@@ -330,7 +330,7 @@ mqtt_config: dict[str, dict[str, any]] = {
         },
     },
     "pv1/current": {
-        "enabled": pv_mpp_trackers >= 1,
+        "enabled": pv_mppt_trackers >= 1,
         "value": modbus.read_pv1_current,
         "interval": pv_interval,
         "last_update": None,
@@ -341,6 +341,7 @@ mqtt_config: dict[str, dict[str, any]] = {
             "device_class": "current",
         },
     },
+
     "pv1/power": {
         "enabled": pv_mpp_trackers >= 1,
         "value": modbus.read_pv1_charge_power,
@@ -355,7 +356,7 @@ mqtt_config: dict[str, dict[str, any]] = {
     },
     ############ PV2 #####################
     "pv2/voltage": {
-        "enabled": pv_mpp_trackers >= 2,
+        "enabled": pv_mppt_trackers >= 2,
         "value": modbus.read_pv2_voltage,
         "interval": pv_interval,
         "last_update": None,
@@ -367,7 +368,7 @@ mqtt_config: dict[str, dict[str, any]] = {
         },
     },
     "pv2/current": {
-        "enabled": pv_mpp_trackers >= 2,
+        "enabled": pv_mppt_trackers >= 2,
         "value": modbus.read_pv2_current,
         "interval": pv_interval,
         "last_update": None,
@@ -378,6 +379,7 @@ mqtt_config: dict[str, dict[str, any]] = {
             "device_class": "current",
         },
     },
+
     "pv2/power": {
         "enabled": pv_mpp_trackers >= 2,
         "value": modbus.read_pv2_charge_power,
@@ -391,8 +393,9 @@ mqtt_config: dict[str, dict[str, any]] = {
         },
     },
     ############ PV #####################
-    "pv/power": {
-        "enabled": pv_mpp_trackers >= 1,
+
+    "pv/total_power": {
+        "enabled": pv_mppt_trackers >= 1,
         "value": modbus.read_pv_total_power,
         "interval": pv_interval,
         "last_update": None,
@@ -404,7 +407,7 @@ mqtt_config: dict[str, dict[str, any]] = {
         },
     },
     "pv/charging_current": {
-        "enabled": pv_mpp_trackers >= 1,
+        "enabled": pv_mppt_trackers >= 1,
         "value": modbus.read_pv_charging_current,
         "interval": pv_interval,
         "last_update": None,
@@ -442,6 +445,7 @@ mqtt_config: dict[str, dict[str, any]] = {
             "device_class": "current",
         },
     },
+  #If you have CTs, this will report CT power, but othwerwise reports grid power, can get grid power in seperate endpoint by subtracting home load power which will be 0 with no CTs
     "ct/power_a": {
         "enabled": split_phase >= 1,
         "value": modbus.read_grid_active_power_a,
@@ -540,11 +544,13 @@ mqtt_config: dict[str, dict[str, any]] = {
             "device_class": "current",
         },
     },
+#If you have CTs, this will report CT power, but othwerwise reports grid power, can get grid power in seperate endpoint by subtracting home load power which will be 0 with no CTs
     "ct/power_b": {
         "enabled": split_phase >= 2,
         "value": modbus.read_grid_active_power_b,
         "interval": grid_interval,
         "last_update": None,
+
         "last_value": 0,
         "config": {
             "name": "CT Power B",
@@ -553,6 +559,7 @@ mqtt_config: dict[str, dict[str, any]] = {
             "device_class": "power",
         },
     },
+
     "home/power_b": {
         "enabled": split_phase >= 2,
         "value": modbus.read_register_value,
@@ -626,11 +633,13 @@ mqtt_config: dict[str, dict[str, any]] = {
             "device_class": "current",
         },
     },
+#If you have CTs, this will report CT power, but othwerwise reports grid power, can get grid power in seperate endpoint by subtracting home load power which will be 0 with no CTs
     "ct/power_c": {
         "enabled": split_phase >= 3,
         "value": modbus.read_grid_active_power_c,
         "interval": grid_interval,
         "last_update": None,
+
         "last_value": 0,
         "config": {
             "name": "CT Power C",
@@ -1354,8 +1363,8 @@ mqtt_config: dict[str, dict[str, any]] = {
         },
     },
     ############ Charging Configuration #####################
-    "charging/current_limit": {
-        "enabled": pv_mpp_trackers >= 1,
+    "charging/pv_current_limit": {
+        "enabled": pv_mppt_trackers >= 1,
         "value": modbus.read_pv_charging_current_limit,
         "interval": general_interval,
         "last_update": None,
@@ -1369,7 +1378,7 @@ mqtt_config: dict[str, dict[str, any]] = {
             "min": 0,
             "max": 200,
             "step": 0.1,
-            "command_topic": "charging/current_limit",
+            "command_topic": "charging/pv_current_limit",
             "mode:": "box"
         },
     },
@@ -1867,16 +1876,17 @@ mqtt_config: dict[str, dict[str, any]] = {
             "command_topic": "inverter/enable_danger",
         },
     },
-   "inverter/pv_priority": {
+   "pv/power_priority": {
+        "enabled": pv_mppt_trackers >= 1,
         "value": modbus.read_pv_power_priority_set,
         "interval": general_interval,
         "last_update": None,
         "topic_type": "select",
         "config": {
-            "name": "PV Priority Mode",
+            "name": "PV Power Priority Mode",
             "icon": "mdi:export",
             "options": ["Load Priority", "Charging Priority", "Grid Priority"],
-            "command_topic": "inverter/pv_priority",
+            "command_topic": "pv/power_priority",
         },
     },
    "inverter/reset": {
@@ -2038,6 +2048,28 @@ mqtt_config: dict[str, dict[str, any]] = {
         "last_update": None,
         "config": {
             "name": "Daily Load Consumed",
+            "icon": "mdi:chart-bar",
+            "unit_of_measurement": "kWh",
+            "device_class": "energy",
+        },
+    },
+    "statistics/total_grid_generated_energy": {
+        "value": modbus.read_total_grid_energy_total,
+        "interval": statistics_interval,
+        "last_update": None,
+        "config": {
+            "name": "Total Generated Energy to Grid",
+            "icon": "mdi:chart-bar",
+            "unit_of_measurement": "kWh",
+            "device_class": "energy",
+        },
+    },
+    "statistics/total_pv_generated_energy": {
+        "value": modbus.read_total_pv_generated_energy_total,
+        "interval": statistics_interval,
+        "last_update": None,
+        "config": {
+            "name": "Total Solar Generated Energy",
             "icon": "mdi:chart-bar",
             "unit_of_measurement": "kWh",
             "device_class": "energy",

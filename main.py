@@ -6,6 +6,8 @@ from dotenv import load_dotenv
 from modbus import debug
 from mqtt_topic_config import mqtt_config, device, mqtt_set_config
 
+mqtt_topic = os.getenv("MQTT_TOPIC")
+
 load_dotenv()
 
 
@@ -17,6 +19,7 @@ publishing_queue = []
 def on_connect(client, userdata, flags, rc):
     # Callback function for when the client connects to the MQTT server
     print(f"Connected with result code {rc}")
+    subscribe(client)
 
 
 def on_message(client, userdata, msg):
@@ -42,6 +45,35 @@ def on_message(client, userdata, msg):
     print(f"Received message: {msg.payload.decode()}")
 
 
+def subscribe(client):
+    for name, vals in mqtt_config.items():
+        if not vals.get("enabled", True):
+            continue
+        topic = f"{mqtt_topic}/{vals.get('topic_type', 'sensor')}/{name}/state"
+        field_name = f"{mqtt_topic}-{str(name).replace('/','-')}"
+
+        if "command_topic" in vals["config"]:
+            vals["config"][
+                "command_topic"
+            ] = f"{mqtt_topic}/{vals.get('topic_type', 'sensor')}/{vals['config']['command_topic']}/set"
+            client.subscribe(vals["config"]["command_topic"])
+            print(f"Subscribed to {vals['config']['command_topic']}")
+
+        json_data = json.dumps(
+            {
+                "device": device,
+                "state_topic": topic,
+                "uniq_id": field_name,
+                **{key: vals["config"][key] for key in vals["config"]},
+            }
+        )
+        client.publish(
+            f"homeassistant/{vals.get('topic_type', 'sensor')}/{field_name}/config",
+            json_data,
+            retain=True,
+        )
+
+
 # Create an instance of the MQTT client
 client = mqtt.Client()
 
@@ -64,7 +96,6 @@ else:
 
 # Connect to the MQTT server
 client.connect(host, port)
-mqtt_topic = os.getenv("MQTT_TOPIC")
 
 for name, vals in mqtt_config.items():
     if not vals.get("enabled", True):
@@ -108,54 +139,61 @@ refresh_interval: float = (
 # Loop continuously sending data to Home Assistant
 client.loop_start()
 while True:
+  
+    if not client.is_connected:
+        client.reconnect()
+    try:
+        # check if we need to update values
+        if len(writing_queue) > 0:
+            for set_fuction, payload, topic in writing_queue:
+                returnval = set_fuction(payload) 
+                if returnval == "update_value":
+                    print("Handling update_value for " + topic)
+                    mqtt_config[topic]["last_value"] = payload
+                if returnval != None:
+                    #print(topic + " last_update was " + str(mqtt_config[topic]["last_update"])) 
+                    interval = vals.get("interval")
+                    current_time = time.time()
+                    mqtt_config[topic]["last_update"] = current_time - interval + refresh_interval 
+                    #print(topic + " last_update is now " + str(mqtt_config[topic]["last_update"])) 
 
-    # check if we need to update values
-    if len(writing_queue) > 0:
-        for set_fuction, payload, topic in writing_queue:
-            returnval = set_fuction(payload) 
-            if returnval == "update_value":
-                print("Handling update_value for " + topic)
-                mqtt_config[topic]["last_value"] = payload
-            if returnval != None:
-                #print(topic + " last_update was " + str(mqtt_config[topic]["last_update"])) 
-                interval = vals.get("interval")
-                current_time = time.time()
-                mqtt_config[topic]["last_update"] = current_time - interval + refresh_interval 
-                #print(topic + " last_update is now " + str(mqtt_config[topic]["last_update"])) 
+            writing_queue = []
+            time.sleep(loop_sleep)
 
-        writing_queue = []
+        for name, vals in mqtt_config.items():
+            if not vals.get("enabled", True) or vals.get('topic_type', 'sensor') == "button":
+                continue
+            # find a way to skip values depending the loop count in vals['loop_count']
+            last_update = vals.get("last_update")
+            interval = vals.get("interval")
+            current_time = time.time()
+            if last_update is not None:
+                if interval == -1:
+                    continue
+                if current_time - last_update <= interval:
+                    continue
+
+            debug(f"updating {name}")
+            topic = f"{mqtt_topic}/{vals.get('topic_type', 'sensor')}/{name}/state"
+            if "args" in vals:  
+                vals["args"]["name"] = vals["config"]["name"]
+                value = vals["value"](**vals["args"])
+            else:
+                value = vals["value"]()
+            if value != None:
+                mqtt_config[name]["last_update"] = current_time
+                mqtt_config[name]["last_value"] = value
+                publishing_queue.append((topic, value))
+
+        if len(publishing_queue) > 0:
+            for topic, value in publishing_queue:
+                client.publish(topic, value)
+            publishing_queue = []
+      
         time.sleep(loop_sleep)
-
-    for name, vals in mqtt_config.items():
-        if not vals.get("enabled", True) or vals.get('topic_type', 'sensor') == "button":
-            continue
-        # find a way to skip values depending the loop count in vals['loop_count']
-        last_update = vals.get("last_update")
-        interval = vals.get("interval")
-        current_time = time.time()
-        if last_update is not None:
-            if interval == -1:
-                continue
-            if current_time - last_update <= interval:
-                continue
-
-        debug(f"updating {name}")
-        topic = f"{mqtt_topic}/{vals.get('topic_type', 'sensor')}/{name}/state"
-        if "args" in vals:  
-            vals["args"]["name"] = vals["config"]["name"]
-            value = vals["value"](**vals["args"])
-        else:
-            value = vals["value"]()
-        if value != None:
-            mqtt_config[name]["last_update"] = current_time
-            mqtt_config[name]["last_value"] = value
-            publishing_queue.append((topic, value))
-
-    if len(publishing_queue) > 0:
-        for topic, value in publishing_queue:
-            client.publish(topic, value)
-        publishing_queue = []
-
-    time.sleep(loop_sleep)
+        
+     except Exception as e:
+        print(e)
+        time.sleep(5)
 
 client.loop_stop()
