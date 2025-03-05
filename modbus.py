@@ -1069,16 +1069,16 @@ def write_battery_overdischarge_delay_time(value: str):
     return True
 
 
-def read_battery_equalization_charge_time():
+def read_battery_equalization_charge_delay_time():
     try:
       result = instr.read_register(0xE011)
     except:
       return None
-    debug("Battery Equalization Charge Time: " + str(result) + "min")
+    debug("Battery Equalization Charge Delay Time: " + str(result) + "min")
     return result
 
 
-def write_battery_equalization_charge_time(value: str):
+def write_battery_equalization_charge_delay_time(value: str):
     if len(value) == 0:
         return None
     try:
@@ -1298,28 +1298,104 @@ def write_lithium_battery_active_current_set(value: str):
 
 
 def read_bms_charging_limit_current_mode_setting():
-    """
-    TODO: need to find the correct value
-    0: HMI setting
-    1: BMS protocol
-    2: Inverter logic
-    """
     try:
       result = instr.read_register(0xE025)
     except:
       return None
-    debug("BMS Charging Limit Current Mode: " + str(result))
+    setting = {
+        0: "HMI Setting",
+        1: "BMS Protocol",
+        2: "Inverter Logic",
+    }
+    if result in setting: 
+        debug("BMS Charging Limit Current Mode: " + setting[result])
+        return setting[result]
     return result
 
 
 def write_bms_charging_limit_current_mode_setting(value):
-    try:
-        instr.write_register(0xE025, int(value))
-    except:
+    setting = {
+            "HMI Setting" : 0,
+            "BMS Protocol": 1,
+            "Inverter Logic":2,
+    }
+    if value in setting:
+        int_value = setting[value]
+        try:
+            instr.write_register(0xE025, int_value)
+        except:
+            return None
+    else:
         return None
-    debug("BMS Charging Limit Current Mode: " + str(value))
     return True
 
+def read_bms_protocol():
+    try:
+      result = instr.read_register(0xE21B)
+    except:
+      return None
+    setting = {
+        0: "PACE",
+        1: "RUDA",
+        2: "AOGUAN",
+        3: "OULITE",
+        4: "CEF",
+        5: "XINWANGDA",
+        6: "DAQIN",
+        7: "WOW",
+        8: "PYL",
+        9: "MIT",
+        10: "XIX",
+        11: "POL",
+        12: "GUOX",
+        13: "SMK",
+        14: "VOL",
+        15: "WES",
+        17: "UZE_CAN",
+        18: "PYL_CAN",
+        100: "SGP",
+        101: "GSL",
+        102: "PYL2",
+    }
+    if result in setting: 
+        debug("BMS Protocol: " + setting[result])
+        return setting[result]
+    return result
+
+
+def write_bms_protocol(value):
+    setting = {
+        "PACE": 0,
+        "RUDA": 1,
+        "AOGUAN": 2,
+        "OULITE": 3,
+        "CEF": 4,
+        "XINWANGDA": 5,
+        "DAQIN": 6,
+        "WOW": 7,
+        "PYL": 8,
+        "MIT": 9,
+        "XIX": 10,
+        "POL": 11,
+        "GUOX": 12,
+        "SMK": 13,
+        "VOL": 14,
+        "WES": 15,
+        "UZE_CAN": 17,
+        "PYL_CAN": 18,
+        "SGP": 100,
+        "GSL": 101,
+        "PYL2": 102,
+    }
+    if value in setting:
+        int_value = setting[value]
+        try:
+            instr.write_register(0xE21B, int_value)
+        except:
+            return None
+    else:
+        return None
+    return True
 
 def read_charge_start_time_1():
     # Hours and minutes: 23h*256+59min=5,947
@@ -1690,7 +1766,7 @@ def write_parallel_mode(value: str):
         return None
     return True
 
-#Does this setting actually do anything on HESP48120U200-H?
+#This setting doesn't seem to do anything on HESP48120U200-H
 def read_output_priority():
     try:
       result = instr.read_register(0xE204)
@@ -2009,20 +2085,29 @@ def read_bms_communication_enabled():
       return None
     enable = {
         0: "Disable",
-        1: "485-BMS enabled",
-        2: "CAN-BMS enabled",
+        1: "RS485",
+        2: "CAN",
     }
-    debug("BMS Communication: " + enable[result])
+    if result in enable: 
+        debug("BMS Communicaton: " + enable[result])
+        return enable[result]
     return result
 
-
 def write_bms_communication_enabled(value: str):
-    try:
-        instr.write_register(0xE215, int(value))
-    except:
+    enable = {
+            "Disable" : 0, 
+            "RS485" : 1, 
+            "CAN" : 2
+    }
+    if value in enable:
+        int_value = enable[value]
+        try:
+            instr.write_register(0xE215, int_value)
+        except:
+            return None
+    else:
         return None
     return True
-
 
 def read_dc_load_switch():
     try:
@@ -2474,13 +2559,13 @@ def __error_lists(code: int):
         43: "Parallel line connection error in parallel mode",
         44: "No serial number set at factory",
         45: 'item "Parallel" setting error',
-        49: "Selects the local corresponding grod standard (Grid over voltage)",
-        50: "Selects the local corresponding grod standard (Grid under voltage)",
-        51: "Selects the local corresponding grod standard (Grid over frequency)",
-        52: "Selects the local corresponding grod standard (Grid under frequency)",
-        53: "Selects the local corresponding grod standard (Grid loss)",
-        54: "Selects the local corresponding grod standard (Grid DC current over)",
-        55: "Selects the local corresponding grod standard (Grid standard un init)",
+        49: "Grid over voltage",
+        50: "Grid under voltage",
+        51: "Grid over frequency",
+        52: "Grid under frequency",
+        53: "Grid loss",
+        54: "Grid DC current over",
+        55: "Grid standard un init",
         56: "PV1+, PV2+, PV- abnormally low impedance to ground",
         57: "System leakage current exceeds limit",
         58: "BMS communication failure",
