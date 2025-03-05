@@ -999,9 +999,12 @@ mqtt_config: dict[str, dict[str, any]] = {
     },
     "inverter/apparent_power": {
         "enabled": split_phase >= 1,
-        "value": lambda: mqtt_config["inverter/apparent_power_a"]["last_value"]
-        + mqtt_config["inverter/apparent_power_b"]["last_value"]
-        + mqtt_config["inverter/apparent_power_c"]["last_value"],
+        "value": lambda: round(
+            mqtt_config["inverter/apparent_power_a"]["last_value"]
+            + mqtt_config["inverter/apparent_power_b"]["last_value"]
+            + mqtt_config["inverter/apparent_power_c"]["last_value"],
+            1,
+        ),
         "interval": inverter_interval,
         "last_update": None,
         "config": {
