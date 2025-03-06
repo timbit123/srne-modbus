@@ -33,7 +33,9 @@ BATTERY_CONNECTED=true #Is a battery connected (true,false)
 
 HAS_AMBIENT_TEMPERATURE=false # does the inverter has ambient temperature sensor (true/false)
 
-SYNC_DATETIME_ON_STARTUP=true #Update datetime during startup with the inverter (true,false)
+SYNC_DATETIME_ENABLED=true #Update datetime from interval
+SYNC_DATETIME_INTERVAL=60 #Update inverter datetime every 60 minutes
+TIMEZONE= #If empty, system will use local time. If not, you can specify your timezone (e.g., "America/New_York")
 
 PUBLISH_SYSTEM=true # publish system information to mqtt at statup (true,false)
 
@@ -56,7 +58,7 @@ LOOP_SLEEP=200 # time in ms to sleep after a full loop. too small value could cr
 1. Clone project and setup venv with the required dependencies:
 
 ```sh
-git clone https://github.com/timbit123/srne-modbus 
+git clone https://github.com/timbit123/srne-modbus
 cd srne-modbus
 python3 -m venv ./venv
 ./venv/bin/pip3 install -r requirements.txt
@@ -102,6 +104,7 @@ sudo systemctl start srne-modbus.service
 ```
 
 ## TODOs
+
 - Add remaining modbus registers
 - Add remaining MQTT topics read/writes
 

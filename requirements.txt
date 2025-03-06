@@ -2,3 +2,4 @@ minimalmodbus==2.1.1
 paho-mqtt==2.1.0
 pyserial==3.5
 python-dotenv==1.0.1
+pytz==2025.1

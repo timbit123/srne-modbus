@@ -4,11 +4,21 @@ import time
 import json
 from dotenv import load_dotenv
 from modbus import debug
+import modbus
 from mqtt_topic_config import mqtt_config, device, mqtt_set_config
+
+
+load_dotenv()
+
 
 mqtt_topic = os.getenv("MQTT_TOPIC")
 
-load_dotenv()
+# Sync inverter datetime
+last_datetime_sync = None
+datetime_sync_interval = (
+    int(os.getenv("SYNC_DATETIME_INTERVAL")) * 60
+)  # minutes to seconds
+datetime_sync_enabled = os.getenv("SYNC_DATETIME_ENABLED") == "true"
 
 
 writing_queue = []
@@ -76,6 +86,18 @@ def subscribe(client):
             json_data,
             retain=True,
         )
+
+
+def update_inverter_datetime():
+    global last_datetime_sync
+    if not datetime_sync_enabled:
+        return
+    if (
+        last_datetime_sync is None
+        or (time.time() - last_datetime_sync) > datetime_sync_interval
+    ):
+        modbus.write_system_date_time()
+        last_datetime_sync = time.time()
 
 
 # Create an instance of the MQTT client
@@ -169,6 +191,7 @@ while True:
                 client.publish(topic, value)
             publishing_queue = []
 
+        update_inverter_datetime()
         time.sleep(loop_sleep)
 
     except Exception as e:
