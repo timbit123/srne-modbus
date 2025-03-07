@@ -2,6 +2,8 @@ import os
 import paho.mqtt.client as mqtt
 import time
 import json
+import signal
+import sys
 from dotenv import load_dotenv
 from modbus import debug
 import modbus
@@ -133,9 +135,22 @@ refresh_interval: float = (
     int(os.getenv("REFRESH_INTERVAL")) if os.getenv("REFRESH_INTERVAL") else 5000
 ) / 1000
 
+# Add these variables before the while loop
+running = True
+
+
+def signal_handler(signum, frame):
+    global running
+    print("\nSignal received. Cleaning up...")
+    running = False
+
+
+# Register the signal handler
+signal.signal(signal.SIGINT, signal_handler)
+
 # Loop continuously sending data to Home Assistant
 client.loop_start()
-while True:
+while running:
     if not client.is_connected:
         client.reconnect()
     try:
@@ -198,4 +213,8 @@ while True:
         print(e)
         time.sleep(5)
 
+# Clean up
+print("Disconnecting from MQTT broker...")
 client.loop_stop()
+client.disconnect()
+sys.exit(0)
