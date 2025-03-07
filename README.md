@@ -35,7 +35,8 @@ HAS_AMBIENT_TEMPERATURE=false # does the inverter has ambient temperature sensor
 
 SYNC_DATETIME_ENABLED=true #Update datetime from interval
 SYNC_DATETIME_INTERVAL=60 #Update inverter datetime every 60 minutes
-TIMEZONE= #If empty, system will use local time. If not, you can specify your timezone (e.g., "America/New_York")
+#If empty, system will use local time. If not, you can specify your timezone (e.g., "America/New_York")
+TIMEZONE=
 
 PUBLISH_SYSTEM=true # publish system information to mqtt at statup (true,false)
 
