@@ -1445,7 +1445,7 @@ def read_charge_start_time_1():
     hours = (result & 0xFF00) >> 8
     minutes = result & 0x00FF
     debug("Charge Start Time 1: " + str(hours) + "h" + str(minutes) + "min")
-    return f"{hours}:{minutes}"
+    return f"{hours:02d}:{minutes:02d}"
 
 
 def write_charge_start_time_1(value: str):
@@ -1470,7 +1470,7 @@ def read_charge_end_time_1():
     hours = (result & 0xFF00) >> 8
     minutes = result & 0x00FF
     debug("Charge End Time 1: " + str(hours) + "h" + str(minutes) + "min")
-    return f"{hours}:{minutes}"
+    return f"{hours:02d}:{minutes:02d}"
 
 
 def write_charge_end_time_1(value: str):
@@ -1492,7 +1492,7 @@ def read_charge_start_time_2():
     hours = (result & 0xFF00) >> 8
     minutes = result & 0x00FF
     debug("Charge Start Time 2: " + str(hours) + "h" + str(minutes) + "min")
-    return f"{hours}:{minutes}"
+    return f"{hours:02d}:{minutes:02d}"
 
 
 def write_charge_start_time_2(value: str):
@@ -1514,7 +1514,7 @@ def read_charge_end_time_2():
     hours = (result & 0xFF00) >> 8
     minutes = result & 0x00FF
     debug("Charge End Time 2: " + str(hours) + "h" + str(minutes) + "min")
-    return f"{hours}:{minutes}"
+    return f"{hours:02d}:{minutes:02d}"
 
 
 def write_charge_end_time_2(value: str):
@@ -1536,7 +1536,7 @@ def read_charge_start_time_3():
     hours = (result & 0xFF00) >> 8
     minutes = result & 0x00FF
     debug("Charge Start Time 3: " + str(hours) + "h" + str(minutes) + "min")
-    return f"{hours}:{minutes}"
+    return f"{hours:02d}:{minutes:02d}"
 
 
 def write_charge_start_time_3(value: str):
@@ -1558,7 +1558,7 @@ def read_charge_end_time_3():
     hours = (result & 0xFF00) >> 8
     minutes = result & 0x00FF
     debug("Charge End Time 3: " + str(hours) + "h" + str(minutes) + "min")
-    return f"{hours}:{minutes}"
+    return f"{hours:02d}:{minutes:02d}"
 
 
 def write_charge_end_time_3(value: str):
@@ -1579,7 +1579,7 @@ def read_time_charge_enabled():
     except:
         return None
     enabled = "Enabled" if int(result) else "Disabled"
-    debug("Charge Time Enabled: " + enabled)
+    debug("Time Charge Enabled: " + enabled)
     return enabled
 
 
@@ -1598,6 +1598,30 @@ def write_time_charge_enabled(value: str):
         return None
     return True
 
+def read_time_discharge_enabled():
+    # 0:Disabled, 1:Enabled
+    try:
+        result = instr.read_register(0xE033)
+    except:
+        return None
+    enabled = "Enabled" if int(result) else "Disabled"
+    debug("Time Discharge Enabled: " + enabled)
+    return enabled
+
+def write_time_discharge_enabled(value: str):
+    priority = {
+        "Disabled": 0,
+        "Enabled": 1,
+    }
+    if value in priority:
+        int_value = priority[value]
+        try:
+            instr.write_register(0xE033, int_value)
+        except:
+            return None
+    else:
+        return None
+    return True
 
 def read_discharge_start_time_1():
     # Hours and minutes: 23h*256+59min=5,947
@@ -1735,16 +1759,185 @@ def write_discharge_end_time_3(value: str):
     debug("Discharge End Time 3 set to " + str(hours) + "h" + str(minutes) + "min")
     return True
 
-
-def read_time_discharge_enabled():
-    # 0:Disabled, 1:Enabled
+def read_stop_time_charge_soc_1():
     try:
-        result = instr.read_register(0xE033)
+        result = instr.read_register(0xE03B)
     except:
         return None
-    debug("Charge Time Enabled: " + str(result))
+    debug("Stop Time Charge 1 SOC Set: " + str(result) + "%")
     return result
 
+def write_stop_time_charge_soc_1(value: str):
+    try:
+        instr.write_register(0xE03B, int(value))
+    except:
+        return None
+    return True
+
+def read_stop_time_charge_soc_2():
+    try:
+        result = instr.read_register(0xE03C)
+    except:
+        return None
+    debug("Stop Time Charge 2 SOC Set: " + str(result) + "%")
+    return result
+
+def write_stop_time_charge_soc_2(value: str):
+    try:
+        instr.write_register(0xE03C, int(value))
+    except:
+        return None
+    return True
+
+def read_stop_time_charge_soc_3():
+    try:
+        result = instr.read_register(0xE03D)
+    except:
+        return None
+    debug("Stop Time Charge 3 SOC Set: " + str(result) + "%")
+    return result
+
+def write_stop_time_charge_soc_3(value: str):
+    try:
+        instr.write_register(0xE03D, int(value))
+    except:
+        return None
+    return True
+
+def read_stop_time_discharge_soc_1():
+    try:
+        result = instr.read_register(0xE03E)
+    except:
+        return None
+    debug("Stop Time Discharge 1 SOC Set: " + str(result) + "%")
+    return result
+
+def write_stop_time_discharge_soc_1(value: str):
+    try:
+        instr.write_register(0xE03E, int(value))
+    except:
+        return None
+    return True
+
+def read_stop_time_discharge_soc_2():
+    try:
+        result = instr.read_register(0xE03F)
+    except:
+        return None
+    debug("Stop Time Discharge 2 SOC Set: " + str(result) + "%")
+    return result
+
+def write_stop_time_discharge_soc_2(value: str):
+    try:
+        instr.write_register(0xE03F, int(value))
+    except:
+        return None
+    return True
+
+def read_stop_time_discharge_soc_3():
+    try:
+        result = instr.read_register(0xE040)
+    except:
+        return None
+    debug("Stop Time Discharge 3 SOC Set: " + str(result) + "%")
+    return result
+
+def write_stop_time_discharge_soc_3(value: str):
+    try:
+        instr.write_register(0xE040, int(value))
+    except:
+        return None
+    return True
+
+def read_time_charge_max_power_1():
+    try:
+        result = instr.read_register(0xE04A)
+    except:
+        return None
+    debug("Time Charge 1 Max Power Set: " + str(result) + "W")
+    return result
+
+def write_time_charge_max_power_1(value: str):
+    try:
+        instr.write_register(0xE04A, int(value))
+    except:
+        return None
+    return True
+
+def read_time_charge_max_power_2():
+    try:
+        result = instr.read_register(0xE04B)
+    except:
+        return None
+    debug("Time Charge 2 Max Power Set: " + str(result) + "W")
+    return result
+
+def write_time_charge_max_power_2(value: str):
+    try:
+        instr.write_register(0xE04B, int(value))
+    except:
+        return None
+    return True
+
+def read_time_charge_max_power_3():
+    try:
+        result = instr.read_register(0xE04C)
+    except:
+        return None
+    debug("Time Charge 3 Max Power Set: " + str(result) + "W")
+    return result
+
+def write_time_charge_max_power_3(value: str):
+    try:
+        instr.write_register(0xE04C, int(value))
+    except:
+        return None
+    return True
+
+def read_time_discharge_max_power_1():
+    try:
+        result = instr.read_register(0xE047)
+    except:
+        return None
+    debug("Time Discharge 1 Max Power Set: " + str(result) + "W")
+    return result
+
+def write_time_discharge_max_power_1(value: str):
+    try:
+        instr.write_register(0xE047, int(value))
+    except:
+        return None
+    return True
+
+def read_time_discharge_max_power_2():
+    try:
+        result = instr.read_register(0xE048)
+    except:
+        return None
+    debug("Time Discharge 2 Max Power Set: " + str(result) + "W")
+    return result
+
+def write_time_discharge_max_power_2(value: str):
+    try:
+        instr.write_register(0xE048, int(value))
+    except:
+        return None
+    return True
+
+def read_time_discharge_max_power_3():
+    try:
+        result = instr.read_register(0xE049)
+    except:
+        return None
+    debug("Time Discharge 3 Max Power Set: " + str(result) + "W")
+    return result
+
+def write_time_discharge_max_power_3(value: str):
+    try:
+        instr.write_register(0xE049, int(value))
+    except:
+        return None
+    return True
 
 def read_pv_power_priority_set():
     try:
@@ -1841,7 +2034,7 @@ def read_hybrid_mode():
         result = instr.read_register(0xE037)
     except:
         return None
-    hybrid_mode = {1: "On Grid", 2: "Limit Power to UPS", 3: "Limit Power to Home"}
+    hybrid_mode = {1: "On Grid", 2: "Limit Power to UPS", 3: "Limit Power to Home", 4: "AC Coupling"}
     if result in hybrid_mode:
         debug("Hyrbid Mode: " + hybrid_mode[result])
         return hybrid_mode[result]
@@ -1850,7 +2043,7 @@ def read_hybrid_mode():
 
 
 def write_hybrid_mode(value: str):
-    hybrid_mode = {"On Grid": 1, "Limit Power to UPS": 2, "Limit Power to Home": 3}
+    hybrid_mode = {"On Grid": 1, "Limit Power to UPS": 2, "Limit Power to Home": 3, "AC Coupling": 4}
     if value in hybrid_mode:
         int_value = hybrid_mode[value]
         try:
@@ -1880,6 +2073,31 @@ def write_grid_charging_current_limit(value: str):
         return None
     return True
 
+def read_gen_mode():
+    try:
+        result = instr.read_register(0xE21F)
+    except:
+        return None
+    gen_mode = {0: "Generator Mode", 1: "Micro Inverter Mode", 2: "Smart Load Mode"}
+    if result in gen_mode:
+        debug("Hyrbid Mode: " + gen_mode[result])
+        return gen_mode[result]
+
+    return result
+
+
+def write_gen_mode(value: str):
+    gen_mode = {"Generator Mode": 0, "Micro Inverter Mode": 1, "Smart Load Mode": 2}
+    if value in gen_mode:
+        int_value = gen_mode[value]
+        try:
+            instr.write_register(0xE21F, int_value)
+        except Exception as e:
+            print(e)
+            return None
+    else:
+        return None
+    return True
 
 def read_battery_equalization_charging_enable():
     try:
