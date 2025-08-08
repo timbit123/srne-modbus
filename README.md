@@ -27,6 +27,7 @@ DEBUG=false
 DEVICE_MANUFACTURER=SRNE #Manufacturer of the device, name will be displayed in Home Assistant as device.
 MODBUS_ADDRESS=1 #Modbus address of the device (usually 1)
 MODBUS_DEVICE="/dev/ttyUSB0" #tty port to use for modbus communication
+PARALLEL=false #false:Single Inverter, N:N Parallel Inverters, simulate parallel registers by multiplying connected inverter register by N, true:Parallel Inverters, use inverter parallel registers(must be supported by inverter)
 SPLIT_PHASE=2 #Number of phase for the inverter (1,2,3)
 NB_MPPT_TRACKERS=1 #Number of MPPT tracker connected (0,1,2)
 BATTERY_CONNECTED=true #Is a battery connected (true,false)
