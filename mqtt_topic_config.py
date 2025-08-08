@@ -14,6 +14,11 @@ device = {
 
 system_enabled: bool = True if os.getenv("PUBLISH_SYSTEM") == "true" else False
 battery_enabled: bool = True if os.getenv("BATTERY_CONNECTED") == "true" else False
+try:
+    simulate_parallel = int(os.getenv("PARALLEL")) if os.getenv("PARALLEL") else 0
+except ValueError:
+    simulate_parallel = 0
+parallel: bool = True if os.getenv("PARALLEL") == "true" or simulate_parallel > 1 else False
 split_phase: int = int(os.getenv("SPLIT_PHASE")) if os.getenv("SPLIT_PHASE") else 2
 has_ambient_temperature: bool = (
     True if os.getenv("HAS_AMBIENT_TEMPERATURE") == "true" else False
@@ -672,6 +677,7 @@ mqtt_config: dict[str, dict[str, any]] = {
         ),
         "interval": inverter_interval,
         "last_update": None,
+        "last_value": 0,
         "config": {
             "name": "CT Total Power",
             "icon": "mdi:flash",
@@ -689,6 +695,7 @@ mqtt_config: dict[str, dict[str, any]] = {
         ),
         "interval": inverter_interval,
         "last_update": None,
+        "last_value": 0,
         "config": {
             "name": "Home Load Total Power",
             "icon": "mdi:flash",
@@ -730,7 +737,60 @@ mqtt_config: dict[str, dict[str, any]] = {
             "device_class": "power",
         },
     },
+    # If you have CTs, this will report CT power, but othwerwise reports grid power, can get grid power in seperate endpoint by subtracting home load power which will be 0 with no CTs
+    "ct/parallel_power": {
+        "enabled": parallel,
+        "value": lambda: round(modbus.read_parallel_grid_active_power_sum() if simulate_parallel==0 else mqtt_config["ct/power"]["last_value"]*simulate_parallel,
+            1,
+        ),
+        "interval": grid_interval,
+        "last_update": None,
+        "config": {
+            "name": "CT Parallel Total Power",
+            "icon": "mdi:flash",
+            "unit_of_measurement": "W",
+            "device_class": "power",
+        },
+    },
+    "home/parallel_power": {
+        "enabled": parallel,
+        "value": lambda: round(modbus.read_parallel_home_active_power_sum() if simulate_parallel==0 else mqtt_config["home/power"]["last_value"]*simulate_parallel,
+            1,
+        ),
+        "interval": grid_interval,
+        "last_update": None,
+        "config": {
+            "name": "Home Parallel Total Power",
+            "icon": "mdi:flash",
+            "unit_of_measurement": "W",
+            "device_class": "power",
+        },
+    },
+    "gen/parallel_power": {
+        "enabled": parallel and simulate_parallel==0,
+        "value": modbus.read_parallel_gen_active_power_sum,
+        "interval": grid_interval,
+        "last_update": None,
+        "config": {
+            "name": "Gen Parallel Total Power",
+            "icon": "mdi:flash",
+            "unit_of_measurement": "W",
+            "device_class": "power",
+        },
+    },
     ############ Inverter #####################
+    "inverter/num_parallel": {
+        "enabled": parallel,
+        "value": modbus.read_register_value,
+        "args": {"register": 0x24D, "integer": True},
+        "last_update": None,
+        "interval": inverter_interval,
+        "config": {
+            "name": "Number of Parallel Inverters",
+            "entity_category": "diagnostic",
+            "icon": "mdi:information",
+        },
+    },
     "inverter/error": {
         "enabled": True,
         "value": modbus.read_register_value,
@@ -1275,6 +1335,18 @@ mqtt_config: dict[str, dict[str, any]] = {
             "device_class": "percentage",
         },
     },
+    "load/parallel_ratio": {
+        "enabled": parallel and simulate_parallel==0,
+        "value": modbus.read_parallel_load_ratio_sum,
+        "interval": load_interval,
+        "last_update": None,
+        "config": {
+            "name": "Parallel Load Ratio",
+            "icon": "mdi:current-ac",
+            "unit_of_measurement": "%",
+            "device_class": "percentage",
+        },
+    },
     "load/active_power": {
         "enabled": split_phase >= 1,
         "value": lambda: round(
@@ -1302,6 +1374,7 @@ mqtt_config: dict[str, dict[str, any]] = {
         ),
         "interval": load_interval,
         "last_update": None,
+        "last_value": 0,
         "config": {
             "name": "Load Total Power",
             "icon": "mdi:flash",
@@ -1324,6 +1397,20 @@ mqtt_config: dict[str, dict[str, any]] = {
             "icon": "mdi:flash",
             "unit_of_measurement": "VA",
             "device_class": "apparent_power",
+        },
+    },
+    "load/parallel_power": {
+        "enabled": parallel,
+        "value": lambda: round(modbus.read_parallel_load_active_power_sum() if simulate_parallel==0 else mqtt_config["load/power"]["last_value"]*simulate_parallel,
+            1,
+        ),
+        "interval": grid_interval,
+        "last_update": None,
+        "config": {
+            "name": "Load Parallel Total Power",
+            "icon": "mdi:flash",
+            "unit_of_measurement": "W",
+            "device_class": "power",
         },
     },
     ############ Charging Configuration #####################
@@ -1809,6 +1896,15 @@ mqtt_config: dict[str, dict[str, any]] = {
             "command_topic": "inverter/hybrid_mode",
         },
     },
+    # Unclear on purpose of this register
+    #"inverter/gen_charge_disabled": {
+    #    "value": modbus.read_gen_charge_disabled,
+    #    "interval": general_interval,
+    #    "last_update": None,
+    #    "config": {
+    #        "name": "Gen Charge Disabled",
+    #    },
+    #},
     "inverter/generator_mode": {
         "value": modbus.read_gen_mode,
         "interval": general_interval,

@@ -357,7 +357,8 @@ def read_inverter_frequency():
 
 def read_load_current_a():
     try:
-        result = instr.read_register(0x219)
+        addr = 0x219
+        result = max(0,instr.read_register(addr, signed=True))
     except:
         return None
     result = result / 10
@@ -367,7 +368,8 @@ def read_load_current_a():
 
 def read_load_active_power_a():
     try:
-        result = instr.read_register(0x21B)
+        addr = 0x21B
+        result = max(0,instr.read_register(addr, signed=True))
     except:
         return None
     result = result
@@ -377,7 +379,8 @@ def read_load_active_power_a():
 
 def read_load_apparent_power_a():
     try:
-        result = instr.read_register(0x21C)
+        addr = 0x21C
+        result = max(0,instr.read_register(addr, signed=True))
     except:
         return None
     result = result
@@ -547,7 +550,8 @@ def read_inverter_current_c():
 
 def read_load_current_b():
     try:
-        result = instr.read_register(0x230)
+        addr = 0x230
+        result = max(0,instr.read_register(addr, signed=True))
     except:
         return None
     result = result / 10
@@ -557,7 +561,8 @@ def read_load_current_b():
 
 def read_load_current_c():
     try:
-        result = instr.read_register(0x231)
+        addr = 0x231
+        result = max(0,instr.read_register(addr, signed=True))
     except:
         return None
     result = result / 10
@@ -567,7 +572,8 @@ def read_load_current_c():
 
 def read_load_active_power_b():
     try:
-        result = instr.read_register(0x232)
+        addr = 0x232
+        result = max(0,instr.read_register(addr, signed=True))
     except:
         return None
     debug("Load Active Power B: " + str(result) + "W")
@@ -576,16 +582,22 @@ def read_load_active_power_b():
 
 def read_load_active_power_c():
     try:
-        result = instr.read_register(0x233)
+        addr = 0x233
+        result = max(0,instr.read_register(addr, signed=True))
     except:
         return None
     debug("Load Active Power C: " + str(result) + "W")
     return result
 
+def read_parallel_load_active_power_sum():
+    result = instr.read_register(0x24E)
+    debug("Parallel Load Active Power Sum: " + str(result) + "W")
+    return result
 
 def read_load_apparent_power_b():
     try:
-        result = instr.read_register(0x234)
+        addr = 0x234
+        result = max(0,instr.read_register(addr, signed=True))
     except:
         return None
     debug("Load Apparent Power B: " + str(result) + "VA")
@@ -594,7 +606,8 @@ def read_load_apparent_power_b():
 
 def read_load_apparent_power_c():
     try:
-        result = instr.read_register(0x235)
+        addr = 0x235
+        result = max(0,instr.read_register(addr, signed=True))
     except:
         return None
     debug("Load Apparent Power C: " + str(result) + "VA")
@@ -618,6 +631,13 @@ def read_load_ratio_c():
     debug("Load Ratio C: " + str(result) + "%")
     return result
 
+def read_parallel_load_ratio_sum():
+    try:
+        result = instr.read_register(0x24C)
+    except:
+        return None
+    debug("Parallel Load Ratio Sum: " + str(result) + "%")
+    return result
 
 def read_grid_current_b():
     try:
@@ -674,6 +694,16 @@ def read_grid_active_power_c():
     debug("Grid Active Power C: " + str(result) + "W")
     return result
 
+def read_parallel_grid_active_power_sum():
+    # keep consistent with battery power convention
+    # positive value when inverter is consuming power from the grid
+    # negative value when inverter is exporting power to the grid
+    try:
+        result = -instr.read_register(0x252, signed=True)
+    except:
+        return None
+    debug("Parallel Grid Active Power Sum: " + str(result) + "W")
+    return result
 
 def read_grid_apparent_power_a():
     try:
@@ -713,12 +743,20 @@ def read_home_load_active_power_b():
     debug("Home Load Active Power B: " + str(result) + "W")
     return result
 
-
 def read_home_load_active_power_c():
     result = instr.read_register(0x242)
     debug("Home Load Active Power C: " + str(result) + "W")
     return result
 
+def read_parallel_home_active_power_sum():
+    result = instr.read_register(0x250)
+    debug("Parallel Home Load Active Power Sum: " + str(result) + "W")
+    return result
+
+def read_parallel_gen_active_power_sum():
+    result = instr.read_register(0x254)
+    debug("Parallel Gen Active Power Sum: " + str(result) + "W")
+    return result
 
 #################### P03 Device Control Area ##################
 
@@ -2073,6 +2111,14 @@ def write_grid_charging_current_limit(value: str):
         return None
     return True
 
+def read_gen_charge_disabled():
+    try:
+        result = instr.read_register(0xE21A)
+    except:
+        return None
+    debug("Gen Charge Disabled: " + str(result))
+    return result
+
 def read_gen_mode():
     try:
         result = instr.read_register(0xE21F)
@@ -2794,7 +2840,7 @@ def __error_lists(code: int):
         7: "Bus overvoltage (hardware protection)",
         8: "Bus overvoltage (software protection)",
         9: "PV overvoltage protection",
-        10: "Boost overcurrent (software protection)",
+        10: "AFCI Fault/Boost overcurrent (software protection)",
         11: "Boost overcurrent (hardware protection)",
         12: "Master-slave HES communcation failure",
         13: "Bypass overload protection",
@@ -2841,6 +2887,6 @@ def __error_lists(code: int):
         60: "BMS alarm battery low temperature",
         61: "BMS alarm battery over temperature",
         62: "BMS alarm battery over current",
-        63: "BMS alaram low battery",
+        63: "BMS alarm low battery",
     }
     return errors[code]
