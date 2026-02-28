@@ -92,14 +92,19 @@ def subscribe(client):
 
 def update_inverter_datetime():
     global last_datetime_sync
+    current_time = time.time()
     if not datetime_sync_enabled:
         return
     if (
         last_datetime_sync is None
-        or (time.time() - last_datetime_sync) > datetime_sync_interval
+        or (current_time - last_datetime_sync) > datetime_sync_interval
     ):
         modbus.write_system_date_time()
-        last_datetime_sync = time.time()
+        # sleep in case inverter need to resync stuff. 
+        # I'm trying to understand why I'm getting no communication error after some time
+        time.sleep(5)
+
+        last_datetime_sync = current_time
 
 
 # Create an instance of the MQTT client
@@ -196,6 +201,12 @@ while running:
                 value = vals["value"](**vals["args"])
             else:
                 value = vals["value"]()
+
+            if value == None:
+                print(f"Failed to get value for {name}")
+                time.sleep(5)
+                break
+
             if value != None:
                 mqtt_config[name]["last_update"] = current_time
                 mqtt_config[name]["last_value"] = value
