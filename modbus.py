@@ -383,7 +383,8 @@ def read_inverter_frequency():
 
 def read_load_current_a():
     try:
-        result = instr.read_register(0x219)
+        addr = 0x219
+        result = max(0,instr.read_register(addr, signed=True))
     except Exception as e:
         print(e)
         return None
@@ -394,7 +395,8 @@ def read_load_current_a():
 
 def read_load_active_power_a():
     try:
-        result = instr.read_register(0x21B)
+        addr = 0x21B
+        result = max(0,instr.read_register(addr, signed=True))
     except Exception as e:
         print(e)
         return None
@@ -405,7 +407,8 @@ def read_load_active_power_a():
 
 def read_load_apparent_power_a():
     try:
-        result = instr.read_register(0x21C)
+        addr = 0x21C
+        result = max(0,instr.read_register(addr, signed=True))
     except Exception as e:
         print(e)
         return None
@@ -592,7 +595,8 @@ def read_inverter_current_c():
 
 def read_load_current_b():
     try:
-        result = instr.read_register(0x230)
+        addr = 0x230
+        result = max(0,instr.read_register(addr, signed=True))
     except Exception as e:
         print(e)
         return None
@@ -603,7 +607,8 @@ def read_load_current_b():
 
 def read_load_current_c():
     try:
-        result = instr.read_register(0x231)
+        addr = 0x231
+        result = max(0,instr.read_register(addr, signed=True))
     except Exception as e:
         print(e)
         return None
@@ -614,7 +619,8 @@ def read_load_current_c():
 
 def read_load_active_power_b():
     try:
-        result = instr.read_register(0x232)
+        addr = 0x232
+        result = max(0,instr.read_register(addr, signed=True))
     except Exception as e:
         print(e)
         return None
@@ -624,17 +630,23 @@ def read_load_active_power_b():
 
 def read_load_active_power_c():
     try:
-        result = instr.read_register(0x233)
+        addr = 0x233
+        result = max(0,instr.read_register(addr, signed=True))
     except Exception as e:
         print(e)
         return None
     debug("Load Active Power C: " + str(result) + "W")
     return result
 
+def read_parallel_load_active_power_sum():
+    result = instr.read_register(0x24E)
+    debug("Parallel Load Active Power Sum: " + str(result) + "W")
+    return result
 
 def read_load_apparent_power_b():
     try:
-        result = instr.read_register(0x234)
+        addr = 0x234
+        result = max(0,instr.read_register(addr, signed=True))
     except Exception as e:
         print(e)
         return None
@@ -644,7 +656,8 @@ def read_load_apparent_power_b():
 
 def read_load_apparent_power_c():
     try:
-        result = instr.read_register(0x235)
+        addr = 0x235
+        result = max(0,instr.read_register(addr, signed=True))
     except Exception as e:
         print(e)
         return None
@@ -671,6 +684,13 @@ def read_load_ratio_c():
     debug("Load Ratio C: " + str(result) + "%")
     return result
 
+def read_parallel_load_ratio_sum():
+    try:
+        result = instr.read_register(0x24C)
+    except:
+        return None
+    debug("Parallel Load Ratio Sum: " + str(result) + "%")
+    return result
 
 def read_grid_current_b():
     try:
@@ -732,6 +752,16 @@ def read_grid_active_power_c():
     debug("Grid Active Power C: " + str(result) + "W")
     return result
 
+def read_parallel_grid_active_power_sum():
+    # keep consistent with battery power convention
+    # positive value when inverter is consuming power from the grid
+    # negative value when inverter is exporting power to the grid
+    try:
+        result = -instr.read_register(0x252, signed=True)
+    except:
+        return None
+    debug("Parallel Grid Active Power Sum: " + str(result) + "W")
+    return result
 
 def read_grid_apparent_power_a():
     try:
@@ -774,12 +804,20 @@ def read_home_load_active_power_b():
     debug("Home Load Active Power B: " + str(result) + "W")
     return result
 
-
 def read_home_load_active_power_c():
     result = instr.read_register(0x242)
     debug("Home Load Active Power C: " + str(result) + "W")
     return result
 
+def read_parallel_home_active_power_sum():
+    result = instr.read_register(0x250)
+    debug("Parallel Home Load Active Power Sum: " + str(result) + "W")
+    return result
+
+def read_parallel_gen_active_power_sum():
+    result = instr.read_register(0x254)
+    debug("Parallel Gen Active Power Sum: " + str(result) + "W")
+    return result
 
 #################### P03 Device Control Area ##################
 
@@ -1569,7 +1607,7 @@ def read_charge_start_time_1():
     hours = (result & 0xFF00) >> 8
     minutes = result & 0x00FF
     debug("Charge Start Time 1: " + str(hours) + "h" + str(minutes) + "min")
-    return f"{hours}:{minutes}"
+    return f"{hours:02d}:{minutes:02d}"
 
 
 def write_charge_start_time_1(value: str):
@@ -1596,7 +1634,7 @@ def read_charge_end_time_1():
     hours = (result & 0xFF00) >> 8
     minutes = result & 0x00FF
     debug("Charge End Time 1: " + str(hours) + "h" + str(minutes) + "min")
-    return f"{hours}:{minutes}"
+    return f"{hours:02d}:{minutes:02d}"
 
 
 def write_charge_end_time_1(value: str):
@@ -1620,7 +1658,7 @@ def read_charge_start_time_2():
     hours = (result & 0xFF00) >> 8
     minutes = result & 0x00FF
     debug("Charge Start Time 2: " + str(hours) + "h" + str(minutes) + "min")
-    return f"{hours}:{minutes}"
+    return f"{hours:02d}:{minutes:02d}"
 
 
 def write_charge_start_time_2(value: str):
@@ -1644,7 +1682,7 @@ def read_charge_end_time_2():
     hours = (result & 0xFF00) >> 8
     minutes = result & 0x00FF
     debug("Charge End Time 2: " + str(hours) + "h" + str(minutes) + "min")
-    return f"{hours}:{minutes}"
+    return f"{hours:02d}:{minutes:02d}"
 
 
 def write_charge_end_time_2(value: str):
@@ -1668,7 +1706,7 @@ def read_charge_start_time_3():
     hours = (result & 0xFF00) >> 8
     minutes = result & 0x00FF
     debug("Charge Start Time 3: " + str(hours) + "h" + str(minutes) + "min")
-    return f"{hours}:{minutes}"
+    return f"{hours:02d}:{minutes:02d}"
 
 
 def write_charge_start_time_3(value: str):
@@ -1692,7 +1730,7 @@ def read_charge_end_time_3():
     hours = (result & 0xFF00) >> 8
     minutes = result & 0x00FF
     debug("Charge End Time 3: " + str(hours) + "h" + str(minutes) + "min")
-    return f"{hours}:{minutes}"
+    return f"{hours:02d}:{minutes:02d}"
 
 
 def write_charge_end_time_3(value: str):
@@ -1715,7 +1753,7 @@ def read_time_charge_enabled():
         print(e)
         return None
     enabled = "Enabled" if int(result) else "Disabled"
-    debug("Charge Time Enabled: " + enabled)
+    debug("Time Charge Enabled: " + enabled)
     return enabled
 
 
@@ -1735,6 +1773,30 @@ def write_time_charge_enabled(value: str):
         return None
     return True
 
+def read_time_discharge_enabled():
+    # 0:Disabled, 1:Enabled
+    try:
+        result = instr.read_register(0xE033)
+    except:
+        return None
+    enabled = "Enabled" if int(result) else "Disabled"
+    debug("Time Discharge Enabled: " + enabled)
+    return enabled
+
+def write_time_discharge_enabled(value: str):
+    priority = {
+        "Disabled": 0,
+        "Enabled": 1,
+    }
+    if value in priority:
+        int_value = priority[value]
+        try:
+            instr.write_register(0xE033, int_value)
+        except:
+            return None
+    else:
+        return None
+    return True
 
 def read_discharge_start_time_1():
     # Hours and minutes: 23h*256+59min=5,947
@@ -1884,7 +1946,6 @@ def write_discharge_end_time_3(value: str):
     debug("Discharge End Time 3 set to " + str(hours) + "h" + str(minutes) + "min")
     return True
 
-
 def read_time_discharge_enabled():
     # 0:Disabled, 1:Enabled
     try:
@@ -1892,9 +1953,187 @@ def read_time_discharge_enabled():
     except Exception as e:
         print(e)
         return None
-    debug("Charge Time Enabled: " + str(result))
+
+def read_stop_time_charge_soc_1():
+    try:
+        result = instr.read_register(0xE03B)
+    except:
+        return None
+    debug("Stop Time Charge 1 SOC Set: " + str(result) + "%")
     return result
 
+def write_stop_time_charge_soc_1(value: str):
+    try:
+        instr.write_register(0xE03B, int(value))
+    except Exception as e:
+        print(e)
+        return None
+    return True
+
+def read_stop_time_charge_soc_2():
+    try:
+        result = instr.read_register(0xE03C)
+    except:
+        return None
+    debug("Stop Time Charge 2 SOC Set: " + str(result) + "%")
+    return result
+
+def write_stop_time_charge_soc_2(value: str):
+    try:
+        instr.write_register(0xE03C, int(value))
+    except:
+        return None
+    return True
+
+def read_stop_time_charge_soc_3():
+    try:
+        result = instr.read_register(0xE03D)
+    except:
+        return None
+    debug("Stop Time Charge 3 SOC Set: " + str(result) + "%")
+    return result
+
+def write_stop_time_charge_soc_3(value: str):
+    try:
+        instr.write_register(0xE03D, int(value))
+    except:
+        return None
+    return True
+
+def read_stop_time_discharge_soc_1():
+    try:
+        result = instr.read_register(0xE03E)
+    except:
+        return None
+    debug("Stop Time Discharge 1 SOC Set: " + str(result) + "%")
+    return result
+
+def write_stop_time_discharge_soc_1(value: str):
+    try:
+        instr.write_register(0xE03E, int(value))
+    except:
+        return None
+    return True
+
+def read_stop_time_discharge_soc_2():
+    try:
+        result = instr.read_register(0xE03F)
+    except:
+        return None
+    debug("Stop Time Discharge 2 SOC Set: " + str(result) + "%")
+    return result
+
+def write_stop_time_discharge_soc_2(value: str):
+    try:
+        instr.write_register(0xE03F, int(value))
+    except:
+        return None
+    return True
+
+def read_stop_time_discharge_soc_3():
+    try:
+        result = instr.read_register(0xE040)
+    except:
+        return None
+    debug("Stop Time Discharge 3 SOC Set: " + str(result) + "%")
+    return result
+
+def write_stop_time_discharge_soc_3(value: str):
+    try:
+        instr.write_register(0xE040, int(value))
+    except:
+        return None
+    return True
+
+def read_time_charge_max_power_1():
+    try:
+        result = instr.read_register(0xE04A)
+    except:
+        return None
+    debug("Time Charge 1 Max Power Set: " + str(result) + "W")
+    return result
+
+def write_time_charge_max_power_1(value: str):
+    try:
+        instr.write_register(0xE04A, int(value))
+    except:
+        return None
+    return True
+
+def read_time_charge_max_power_2():
+    try:
+        result = instr.read_register(0xE04B)
+    except:
+        return None
+    debug("Time Charge 2 Max Power Set: " + str(result) + "W")
+    return result
+
+def write_time_charge_max_power_2(value: str):
+    try:
+        instr.write_register(0xE04B, int(value))
+    except:
+        return None
+    return True
+
+def read_time_charge_max_power_3():
+    try:
+        result = instr.read_register(0xE04C)
+    except:
+        return None
+    debug("Time Charge 3 Max Power Set: " + str(result) + "W")
+    return result
+
+def write_time_charge_max_power_3(value: str):
+    try:
+        instr.write_register(0xE04C, int(value))
+    except:
+        return None
+    return True
+
+def read_time_discharge_max_power_1():
+    try:
+        result = instr.read_register(0xE047)
+    except:
+        return None
+    debug("Time Discharge 1 Max Power Set: " + str(result) + "W")
+    return result
+
+def write_time_discharge_max_power_1(value: str):
+    try:
+        instr.write_register(0xE047, int(value))
+    except:
+        return None
+    return True
+
+def read_time_discharge_max_power_2():
+    try:
+        result = instr.read_register(0xE048)
+    except:
+        return None
+    debug("Time Discharge 2 Max Power Set: " + str(result) + "W")
+    return result
+
+def write_time_discharge_max_power_2(value: str):
+    try:
+        instr.write_register(0xE048, int(value))
+    except:
+        return None
+    return True
+
+def read_time_discharge_max_power_3():
+    try:
+        result = instr.read_register(0xE049)
+    except:
+        return None
+    debug("Time Discharge 3 Max Power Set: " + str(result) + "W")
+    return result
+
+def write_time_discharge_max_power_3(value: str):
+    try:
+        instr.write_register(0xE049, int(value))
+    except:
+        return None
+    return True
 
 def read_pv_power_priority_set():
     try:
@@ -1998,7 +2237,7 @@ def read_hybrid_mode():
     except Exception as e:
         print(e)
         return None
-    hybrid_mode = {1: "On Grid", 2: "Limit Power to UPS", 3: "Limit Power to Home"}
+    hybrid_mode = {1: "On Grid", 2: "Limit Power to UPS", 3: "Limit Power to Home", 4: "AC Coupling"}
     if result in hybrid_mode:
         debug("Hyrbid Mode: " + hybrid_mode[result])
         return hybrid_mode[result]
@@ -2007,7 +2246,7 @@ def read_hybrid_mode():
 
 
 def write_hybrid_mode(value: str):
-    hybrid_mode = {"On Grid": 1, "Limit Power to UPS": 2, "Limit Power to Home": 3}
+    hybrid_mode = {"On Grid": 1, "Limit Power to UPS": 2, "Limit Power to Home": 3, "AC Coupling": 4}
     if value in hybrid_mode:
         int_value = hybrid_mode[value]
         try:
@@ -2040,6 +2279,39 @@ def write_grid_charging_current_limit(value: str):
         return None
     return True
 
+def read_gen_charge_disabled():
+    try:
+        result = instr.read_register(0xE21A)
+    except:
+        return None
+    debug("Gen Charge Disabled: " + str(result))
+    return result
+
+def read_gen_mode():
+    try:
+        result = instr.read_register(0xE21F)
+    except:
+        return None
+    gen_mode = {0: "Generator Mode", 1: "Micro Inverter Mode", 2: "Smart Load Mode"}
+    if result in gen_mode:
+        debug("Hyrbid Mode: " + gen_mode[result])
+        return gen_mode[result]
+
+    return result
+
+
+def write_gen_mode(value: str):
+    gen_mode = {"Generator Mode": 0, "Micro Inverter Mode": 1, "Smart Load Mode": 2}
+    if value in gen_mode:
+        int_value = gen_mode[value]
+        try:
+            instr.write_register(0xE21F, int_value)
+        except Exception as e:
+            print(e)
+            return None
+    else:
+        return None
+    return True
 
 def read_battery_equalization_charging_enable():
     try:
@@ -2797,7 +3069,7 @@ def __error_lists(code: int):
         7: "Bus overvoltage (hardware protection)",
         8: "Bus overvoltage (software protection)",
         9: "PV overvoltage protection",
-        10: "Boost overcurrent (software protection)",
+        10: "AFCI Fault/Boost overcurrent (software protection)",
         11: "Boost overcurrent (hardware protection)",
         12: "Master-slave HES communcation failure",
         13: "Bypass overload protection",
@@ -2844,6 +3116,6 @@ def __error_lists(code: int):
         60: "BMS alarm battery low temperature",
         61: "BMS alarm battery over temperature",
         62: "BMS alarm battery over current",
-        63: "BMS alaram low battery",
+        63: "BMS alarm low battery",
     }
     return errors[code]
