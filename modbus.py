@@ -638,11 +638,6 @@ def read_load_active_power_c():
     debug("Load Active Power C: " + str(result) + "W")
     return result
 
-def read_parallel_load_active_power_sum():
-    result = instr.read_register(0x24E)
-    debug("Parallel Load Active Power Sum: " + str(result) + "W")
-    return result
-
 def read_load_apparent_power_b():
     try:
         addr = 0x234
@@ -682,14 +677,6 @@ def read_load_ratio_c():
         print(e)
         return None
     debug("Load Ratio C: " + str(result) + "%")
-    return result
-
-def read_parallel_load_ratio_sum():
-    try:
-        result = instr.read_register(0x24C)
-    except:
-        return None
-    debug("Parallel Load Ratio Sum: " + str(result) + "%")
     return result
 
 def read_grid_current_b():
@@ -807,6 +794,20 @@ def read_home_load_active_power_b():
 def read_home_load_active_power_c():
     result = instr.read_register(0x242)
     debug("Home Load Active Power C: " + str(result) + "W")
+    return result
+
+def read_parallel_load_ratio_sum():
+    try:
+        result = instr.read_register(0x24C)
+    except:
+        return None
+    debug("Parallel Load Ratio Sum: " + str(result) + "%")
+    return result
+
+
+def read_parallel_load_active_power_sum():
+    result = instr.read_register(0x24E)
+    debug("Parallel Load Active Power Sum: " + str(result) + "W")
     return result
 
 def read_parallel_home_active_power_sum():
