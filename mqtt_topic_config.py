@@ -81,7 +81,7 @@ mqtt_set_config: dict[str, any] = {
     "charging/overdischarge_return_voltage": lambda v: modbus.write_battery_voltage_register(0xE00B, v),  # 0xE00B BatOverDischgBackVolt
     "charging/undervoltage_warning_voltage": lambda v: modbus.write_battery_voltage_register(0xE00C, v),  # 0xE00C BatUnderVolt
     "charging/discharge_limit_voltage": lambda v: modbus.write_battery_voltage_register(0xE00E, v),  # 0xE00E BatDischgLimitVolt
-    "charging/overdicharge_limit": lambda v: modbus.write_battery_voltage_register(0xE00D, v),  # 0xE00D BatOverDischgVolt
+    "charging/overdischarge_limit": lambda v: modbus.write_battery_voltage_register(0xE00D, v),  # 0xE00D BatOverDischgVolt
     "charging/stop_discharge_soc_limit": lambda v: modbus.write_register_value(0xE00F, value=v),  # 0xE00F BatStopSOC
     "charging/stop_grid_discharge_soc_limit": lambda v: modbus.write_register_value(0xE01F, value=v),  # 0xE01F BatSocSwToLine
     "charging/restart_grid_discharge_soc_limit": lambda v: modbus.write_register_value(0xE020, value=v),  # 0xE020 BatSocSwToBatt
@@ -116,6 +116,8 @@ mqtt_set_config: dict[str, any] = {
     "inverter/power_saving": lambda v: modbus.write_enabled_register(0xE20C, v),  # 0xE20C PowerSavingMode
     #    "inverter/output_priority": lambda v: modbus.write_lookup_register(0xE204, modbus.OUTPUT_PRIORITIES, v),
     "inverter/hybrid_mode": lambda v: modbus.write_lookup_register(0xE037, modbus.HYBRID_MODES, v),  # 0xE037 InvToGridEn
+    "inverter/leakage_current_detect_enabled": lambda v: modbus.write_enabled_register(0xE038, v),  # 0xE038 LeakageCurrDtcEn
+    "battery/temp_compensation_enabled": lambda v: modbus.write_enabled_register(0xE03A, v),  # 0xE03A BattTemperCompEn
     "inverter/generator_mode": lambda v: modbus.write_lookup_register(0xE21F, modbus.GEN_MODES, v),  # 0xE21F GenWorkMode
     "inverter/battery_priority": lambda v: modbus.write_lookup_register(0xE42A, modbus.BATTERY_DISCHARGE_MODES, v),  # 0xE42A BattForGridPowerEn
     "pv/power_priority": lambda v: modbus.write_lookup_register(0xE039, modbus.PV_PRIORITY_MODES, v),  # 0xE039 PvPowerPrioritySet
@@ -144,7 +146,7 @@ mqtt_set_config: dict[str, any] = {
     "charging/equalization_charge_interval": lambda v: modbus.write_register_value(0xE013, value=v),  # 0xE013 BatConstChgGapTime
     "charging/equalization_timeout": lambda v: modbus.write_register_value(0xE023, value=v),  # 0xE023 BattEqualChgTimeout
     "charging/equalization_enable": lambda v: modbus.write_enabled_register(0xE206, v),  # 0xE206 BattEqualChgEnable
-    "charging/grid_current_limit": lambda v: modbus.write_register_value(0xE005, scale=0.1, value=v),  # 0xE005 BatOverVolt
+    "charging/grid_current_limit": lambda v: modbus.write_register_value(0xE205, scale=0.1, value=v),  # 0xE205 GridChgCurrLimit
     "charging/lithium_active_current": lambda v: modbus.write_register_value(0xE024, scale=0.1, value=v),  # 0xE024 LiBattActiveCurrSet
     "battery/type": lambda v: modbus.write_lookup_register(0xE004, modbus.BATTERY_TYPES, v),  # 0xE004 BatTypeSet
     "battery/soc_low_alarm": lambda v: modbus.write_register_value(0xE01E, value=v),  # 0xE01E BatSocLowAlarm
@@ -162,6 +164,108 @@ mqtt_set_config: dict[str, any] = {
     "inverter/stop_on_bms_error": lambda v: modbus.write_enabled_register(0xE214, v),  # 0xE214 BmsErrStopEnable
     "inverter/dc_load_switch": lambda v: modbus.write_enabled_register(0xE216, v),  # 0xE216 DcLoadSwitch
     "inverter/power_off_on": lambda v: modbus.write_register_value(0xDF00, value=v),  # 0xDF00 CmdPowerOnOff
+    # P05 Battery Parameters - Timed Charge/Discharge Stop Voltages
+    "charging/time_charge_1_stop_voltage": lambda v: modbus.write_register_value(0xE041, scale=0.1, value=v),  # 0xE041 TimedChg1StopVolt
+    "charging/time_charge_2_stop_voltage": lambda v: modbus.write_register_value(0xE042, scale=0.1, value=v),  # 0xE042 TimedChg2StopVolt
+    "charging/time_charge_3_stop_voltage": lambda v: modbus.write_register_value(0xE043, scale=0.1, value=v),  # 0xE043 TimedChg3StopVolt
+    "charging/time_discharge_1_stop_voltage": lambda v: modbus.write_register_value(0xE044, scale=0.1, value=v),  # 0xE044 TimedDchg1StopVolt
+    "charging/time_discharge_2_stop_voltage": lambda v: modbus.write_register_value(0xE045, scale=0.1, value=v),  # 0xE045 TimedDchg2StopVolt
+    "charging/time_discharge_3_stop_voltage": lambda v: modbus.write_register_value(0xE046, scale=0.1, value=v),  # 0xE046 TimedDchg3StopVolt
+    # P05 Battery Parameters - SOC Balance and Smart Load
+    "battery/on_grid_discharge_soc_balance_enabled": lambda v: modbus.write_enabled_register(0xE04E, v),  # 0xE04E OnGridDchgSocBalanceEn
+    "battery/on_grid_charge_soc_balance_enabled": lambda v: modbus.write_enabled_register(0xE04F, v),  # 0xE04F OnGridChgSocBalanceEn
+    "battery/soc_balance_ratio": lambda v: modbus.write_register_value(0xE050, value=v),  # 0xE050 SocBalanceRatio
+    "battery/smart_load_voltage_off": lambda v: modbus.write_battery_voltage_register(0xE052, v),  # 0xE052 BattVoltSmartLoadOff
+    "battery/smart_load_soc_on": lambda v: modbus.write_register_value(0xE053, value=v),  # 0xE053 BattSocSmartLoadOn
+    "battery/smart_load_voltage_on": lambda v: modbus.write_battery_voltage_register(0xE054, v),  # 0xE054 BattVoltSmartLoadOn
+    "battery/max_consumption_enabled": lambda v: modbus.write_enabled_register(0xE055, v),  # 0xE055 MaxConsumptionEn
+    # P07 Inverter User Settings
+    "system/rs485_address": lambda v: modbus.write_register_value(0xE200, value=v),  # 0xE200 Rs485AddrSet
+    "inverter/neutral_ground_function_enabled": lambda v: modbus.write_enabled_register(0xE207, v),  # 0xE207 N_G_FuncEn
+    "inverter/derate_power": lambda v: modbus.write_register_value(0xE218, value=v),  # 0xE218 DeratePower
+    "inverter/max_line_current": lambda v: modbus.write_register_value(0xE21C, scale=0.1, value=v),  # 0xE21C MaxLineCurrent
+    "inverter/max_line_power": lambda v: modbus.write_register_value(0xE21D, value=v),  # 0xE21D MaxLinePower
+    "inverter/output_phase_set": lambda v: modbus.write_register_value(0xE21E, value=v),  # 0xE21E OutputPhaseSet
+    "inverter/gen_charge_max_current": lambda v: modbus.write_register_value(0xE220, scale=0.1, value=v),  # 0xE220 GenChgMaxCurr
+    "inverter/gen_rate_power": lambda v: modbus.write_register_value(0xE221, value=v),  # 0xE221 GenRatePower
+    "inverter/pv_to_smart_load_enabled": lambda v: modbus.write_enabled_register(0xE222, v),  # 0xE222 PvToSmartLoadEn
+    "inverter/grid_to_smart_load_enabled": lambda v: modbus.write_enabled_register(0xE223, v),  # 0xE223 GridToSmartLoadEn
+    "inverter/week_set": lambda v: modbus.write_register_value(0xE224, value=v),  # 0xE224 WeekSet
+    "inverter/week_to_on_time_enabled": lambda v: modbus.write_enabled_register(0xE225, v),  # 0xE225 WeekToOnTimeEn
+    "load/consumption_total_threshold": lambda v: modbus.write_register_value(0xE226, value=v),  # 0xE226 LoadConsumTotalTh
+    "inverter/mppt_input_wind_enabled": lambda v: modbus.write_enabled_register(0xE228, v),  # 0xE228 MpptInputWindEn
+    "inverter/dry_contact_grid_voltage_threshold": lambda v: modbus.write_register_value(0xE229, scale=0.1, value=v),  # 0xE229 DryContactGridVoltTh
+    "inverter/dry_contact_pv_to_grid_threshold": lambda v: modbus.write_register_value(0xE22A, value=v),  # 0xE22A DryContactPVtoGridTh
+    # P08 Grid Connection Parameters
+    "grid/active_power_set": lambda v: modbus.write_register_value(0xE400, value=v),  # 0xE400 GridActivePowerSet
+    "grid/pf_set": lambda v: modbus.write_register_value(0xE401, scale=0.001, value=v),  # 0xE401 GridPfSet
+    "grid/q_set": lambda v: modbus.write_register_value(0xE402, value=v),  # 0xE402 GridQset
+    "grid/standard": lambda v: modbus.write_register_value(0xE403, value=v),  # 0xE403 GridStandard
+    "grid/uv_level_1": lambda v: modbus.write_register_value(0xE404, scale=0.1, value=v),  # 0xE404 GridUVLevel1
+    "grid/uv_time_1": lambda v: modbus.write_register_value(0xE405, scale=0.02, value=v),  # 0xE405 GridUVTime1
+    "grid/uv_resum_level_1": lambda v: modbus.write_register_value(0xE406, scale=0.1, value=v),  # 0xE406 GridUVResumLevel1
+    "grid/uv_resum_time_1": lambda v: modbus.write_register_value(0xE407, scale=0.02, value=v),  # 0xE407 GridUVResumTime1
+    "grid/uv_level_2": lambda v: modbus.write_register_value(0xE408, scale=0.1, value=v),  # 0xE408 GridUVLevel2
+    "grid/uv_time_2": lambda v: modbus.write_register_value(0xE409, scale=0.02, value=v),  # 0xE409 GridUVTime2
+    "grid/uv_resum_level_2": lambda v: modbus.write_register_value(0xE40A, scale=0.1, value=v),  # 0xE40A GridUVResumLevel2
+    "grid/uv_resum_time_2": lambda v: modbus.write_register_value(0xE40B, scale=0.02, value=v),  # 0xE40B GridUVResumTime2
+    "grid/ov_level_1": lambda v: modbus.write_register_value(0xE40C, scale=0.1, value=v),  # 0xE40C GridOVLevel1
+    "grid/ov_time_1": lambda v: modbus.write_register_value(0xE40D, scale=0.02, value=v),  # 0xE40D GridOVTime1
+    "grid/ov_resum_level_1": lambda v: modbus.write_register_value(0xE40E, scale=0.1, value=v),  # 0xE40E GridOVResumLevel1
+    "grid/ov_resum_time_1": lambda v: modbus.write_register_value(0xE40F, scale=0.02, value=v),  # 0xE40F GridOVResumTime1
+    "grid/ov_level_2": lambda v: modbus.write_register_value(0xE410, scale=0.1, value=v),  # 0xE410 GridOVLevel2
+    "grid/ov_time_2": lambda v: modbus.write_register_value(0xE411, scale=0.02, value=v),  # 0xE411 GridOVTime2
+    "grid/ov_resum_level_2": lambda v: modbus.write_register_value(0xE412, scale=0.1, value=v),  # 0xE412 GridOVResumLevel2
+    "grid/ov_resum_time_2": lambda v: modbus.write_register_value(0xE413, scale=0.02, value=v),  # 0xE413 GridOVResumTime2
+    "grid/uf_level_1": lambda v: modbus.write_register_value(0xE414, scale=0.01, value=v),  # 0xE414 GridUFLevel1
+    "grid/uf_time_1": lambda v: modbus.write_register_value(0xE415, scale=0.02, value=v),  # 0xE415 GridUFTime1
+    "grid/uf_resum_level_1": lambda v: modbus.write_register_value(0xE416, scale=0.01, value=v),  # 0xE416 GridUFResumLevel1
+    "grid/uf_resum_time_1": lambda v: modbus.write_register_value(0xE417, scale=0.02, value=v),  # 0xE417 GridUFResumTime1
+    "grid/uf_level_2": lambda v: modbus.write_register_value(0xE418, scale=0.01, value=v),  # 0xE418 GridUFLevel2
+    "grid/uf_time_2": lambda v: modbus.write_register_value(0xE419, scale=0.02, value=v),  # 0xE419 GridUFTime2
+    "grid/uf_resum_level_2": lambda v: modbus.write_register_value(0xE41A, scale=0.01, value=v),  # 0xE41A GridUFResumLevel2
+    "grid/uf_resum_time_2": lambda v: modbus.write_register_value(0xE41B, scale=0.02, value=v),  # 0xE41B GridUFResumTime2
+    "grid/of_level_1": lambda v: modbus.write_register_value(0xE41C, scale=0.01, value=v),  # 0xE41C GridOFLevel1
+    "grid/of_time_1": lambda v: modbus.write_register_value(0xE41D, scale=0.02, value=v),  # 0xE41D GridOFTime1
+    "grid/of_resum_level_1": lambda v: modbus.write_register_value(0xE41E, scale=0.01, value=v),  # 0xE41E GridOFResumLevel1
+    "grid/of_resum_time_1": lambda v: modbus.write_register_value(0xE41F, scale=0.02, value=v),  # 0xE41F GridOFResumTime1
+    "grid/of_level_2": lambda v: modbus.write_register_value(0xE420, scale=0.01, value=v),  # 0xE420 GridOFLevel2
+    "grid/of_time_2": lambda v: modbus.write_register_value(0xE421, scale=0.02, value=v),  # 0xE421 GridOFTime2
+    "grid/of_resum_level_2": lambda v: modbus.write_register_value(0xE422, scale=0.01, value=v),  # 0xE422 GridOFResumLevel2
+    "grid/of_resum_time_2": lambda v: modbus.write_register_value(0xE423, scale=0.02, value=v),  # 0xE423 GridOFResumTime2
+    "grid/reconnect_time": lambda v: modbus.write_register_value(0xE424, value=v),  # 0xE424 ReConnectGridTime
+    "grid/iso_check_enabled": lambda v: modbus.write_enabled_register(0xE425, v),  # 0xE425 IsoCheckEn
+    "grid/iso_protect_point": lambda v: modbus.write_register_value(0xE426, scale=0.1, value=v),  # 0xE426 IsoProtectPoint
+    "grid/grid_func_enabled": lambda v: modbus.write_enabled_register(0xE427, v),  # 0xE427 GridFuncEnable
+    "grid/grid_stand_user_mode": lambda v: modbus.write_register_value(0xE428, value=v),  # 0xE428 GridStandUserMode
+    "grid/ex_ct_ratio": lambda v: modbus.write_register_value(0xE42B, scale=0.01, value=v),  # 0xE42B ExCtRatio
+    "grid/zero_export_power": lambda v: modbus.write_register_value(0xE42C, value=v),  # 0xE42C ZeroExportPower
+    "grid/recon_power_ramp": lambda v: modbus.write_register_value(0xE42D, value=v),  # 0xE42D ReConnPowerRamp
+    "grid/watt_pf_curve_enabled": lambda v: modbus.write_enabled_register(0xE42E, v),  # 0xE42E WattPFCurveEnable
+    "grid/hlvrt_enabled": lambda v: modbus.write_enabled_register(0xE42F, v),  # 0xE42F HLVRTEnable
+    "grid/cei021_auto_test_start": lambda v: modbus.write_enabled_register(0xE430, v),  # 0xE430 Cei021AutoTestStart
+    "grid/afci_enabled": lambda v: modbus.write_enabled_register(0xE431, v),  # 0xE431 AfciEnable
+    "grid/normal_conn_dly_tsec": lambda v: modbus.write_register_value(0xE432, value=v),  # 0xE432 NormalConnDlyTsec
+    "grid/normal_conn_pwr_ramp_tsec": lambda v: modbus.write_register_value(0xE433, value=v),  # 0xE433 NormalConnPwrRampTsec
+    "grid/conn_volt_low": lambda v: modbus.write_register_value(0xE434, scale=0.1, value=v),  # 0xE434 ConnVoltLow
+    "grid/conn_volt_high": lambda v: modbus.write_register_value(0xE435, scale=0.1, value=v),  # 0xE435 ConnVoltHigh
+    "grid/conn_freq_low": lambda v: modbus.write_register_value(0xE436, scale=0.01, value=v),  # 0xE436 ConnFreqLow
+    "grid/conn_freq_high": lambda v: modbus.write_register_value(0xE437, scale=0.01, value=v),  # 0xE437 ConnFreqHigh
+    "grid/grid_func_enabled_1": lambda v: modbus.write_enabled_register(0xE43A, v),  # 0xE43A GridFuncEnable1
+    "grid/drms_enabled": lambda v: modbus.write_enabled_register(0xE43B, v),  # 0xE43B DRMS_Enable
+    "grid/uv_level_3": lambda v: modbus.write_register_value(0xE43C, scale=0.1, value=v),  # 0xE43C GridUVLevel3
+    "grid/uv_time_3": lambda v: modbus.write_register_value(0xE43D, scale=0.02, value=v),  # 0xE43D GridUVTime3
+    "grid/smart_meter_enabled": lambda v: modbus.write_enabled_register(0xE43E, v),  # 0xE43E SmartMeterEn
+    "grid/smart_meter_1_addr": lambda v: modbus.write_register_value(0xE440, value=v),  # 0xE440 SmartMeter1Addr
+    "grid/smart_meter_2_addr": lambda v: modbus.write_register_value(0xE441, value=v),  # 0xE441 SmartMeter2Addr
+    "grid/avg_ov_enabled": lambda v: modbus.write_enabled_register(0xE442, v),  # 0xE442 GridAvgOvEn
+    "grid/avg_ov_threshold": lambda v: modbus.write_register_value(0xE443, scale=0.1, value=v),  # 0xE443 GridAvgOvTh
+    "grid/avg_ov_delay": lambda v: modbus.write_register_value(0xE444, value=v),  # 0xE444 GridAvgOvDelay
+    "grid/rocof_enabled": lambda v: modbus.write_enabled_register(0xE445, v),  # 0xE445 GridRocofEn
+    "grid/rocof_threshold": lambda v: modbus.write_register_value(0xE446, scale=0.01, value=v),  # 0xE446 GridRocofTh
+    "grid/rocof_delay": lambda v: modbus.write_register_value(0xE447, value=v),  # 0xE447 GridRocofDelay
+    # Device Control
+    "inverter/upgrade_cmd": lambda v: modbus.write_register_value(0xDF06, value=v),  # 0xDF06 UpgradeCmd
 }
 
 
@@ -294,6 +398,33 @@ mqtt_config: dict[str, dict[str, any]] = {
         "interval": system_interval,
         "config": {
             "name": "Serial Number",
+            "entity_category": "diagnostic",
+            "icon": "mdi:information",
+        },
+    },
+    ############ P00 Product Information #####################
+    # 0x000C  ProductInfoReversed01
+    "system/product_info_reversed_01": {
+        "enabled": system_enabled,
+        "value": modbus.read_register_str,
+        "args": {"register": 0x000C},
+        "last_update": None,
+        "interval": system_interval,
+        "config": {
+            "name": "Product Info Reversed 01",
+            "entity_category": "diagnostic",
+            "icon": "mdi:information",
+        },
+    },
+    # 0x004A  Cpu2BuidTime
+    "system/cpu2_build_time": {
+        "enabled": system_enabled,
+        "value": modbus.read_register_str,
+        "args": {"register": 0x004A},
+        "last_update": None,
+        "interval": system_interval,
+        "config": {
+            "name": "CPU2 Build Time",
             "entity_category": "diagnostic",
             "icon": "mdi:information",
         },
@@ -585,6 +716,244 @@ mqtt_config: dict[str, dict[str, any]] = {
             "unit_of_measurement": "A",
             "device_class": "current",
             "state_class": "measurement",
+        },
+    },
+    # 0x0118  BmsAlarmH
+    "battery/bms_alarm_h": {
+        "enabled": battery_enabled,
+        "value": modbus.read_register_value,
+        "args": {"register": 0x0118, "integer": True, "format_str": "{:x}", "prefix": "0x"},
+        "interval": battery_interval,
+        "last_update": None,
+        "config": {
+            "name": "BMS Alarm H",
+            "icon": "mdi:alert",
+            "entity_category": "diagnostic",
+        },
+    },
+    # 0x0119  BmsAlarmL
+    "battery/bms_alarm_l": {
+        "enabled": battery_enabled,
+        "value": modbus.read_register_value,
+        "args": {"register": 0x0119, "integer": True, "format_str": "{:x}", "prefix": "0x"},
+        "interval": battery_interval,
+        "last_update": None,
+        "config": {
+            "name": "BMS Alarm L",
+            "icon": "mdi:alert",
+            "entity_category": "diagnostic",
+        },
+    },
+    # 0x011A  BmsProtectH
+    "battery/bms_protect_h": {
+        "enabled": battery_enabled,
+        "value": modbus.read_register_value,
+        "args": {"register": 0x011A, "integer": True, "format_str": "{:x}", "prefix": "0x"},
+        "interval": battery_interval,
+        "last_update": None,
+        "config": {
+            "name": "BMS Protect H",
+            "icon": "mdi:shield-alert",
+            "entity_category": "diagnostic",
+        },
+    },
+    # 0x011B  BmsProtectL
+    "battery/bms_protect_l": {
+        "enabled": battery_enabled,
+        "value": modbus.read_register_value,
+        "args": {"register": 0x011B, "integer": True, "format_str": "{:x}", "prefix": "0x"},
+        "interval": battery_interval,
+        "last_update": None,
+        "config": {
+            "name": "BMS Protect L",
+            "icon": "mdi:shield-alert",
+            "entity_category": "diagnostic",
+        },
+    },
+    # 0x011C  Batt2Volt
+    "battery/batt2_voltage": {
+        "enabled": battery_enabled,
+        "value": modbus.read_register_value,
+        "args": {"register": 0x011C, "scale": 0.1},
+        "interval": battery_interval,
+        "last_update": None,
+        "config": {
+            "name": "Battery 2 Voltage",
+            "icon": "mdi:battery",
+            "unit_of_measurement": "V",
+            "device_class": "voltage",
+            "state_class": "measurement",
+        },
+    },
+    # 0x011D  Batt2Curr
+    "battery/batt2_current": {
+        "enabled": battery_enabled,
+        "value": modbus.read_register_value,
+        "args": {"register": 0x011D, "scale": 0.1, "signed": True},
+        "interval": battery_interval,
+        "last_update": None,
+        "config": {
+            "name": "Battery 2 Current",
+            "icon": "mdi:current-dc",
+            "unit_of_measurement": "A",
+            "device_class": "current",
+            "state_class": "measurement",
+        },
+    },
+    # 0x012A  BmsModuleNum
+    "battery/bms_module_count": {
+        "enabled": battery_enabled,
+        "value": modbus.read_register_value,
+        "args": {"register": 0x012A, "integer": True},
+        "interval": battery_interval,
+        "last_update": None,
+        "config": {
+            "name": "BMS Module Count",
+            "icon": "mdi:counter",
+            "entity_category": "diagnostic",
+        },
+    },
+    # 0x012B  BmsReqFlag
+    "battery/bms_req_flag": {
+        "enabled": battery_enabled,
+        "value": modbus.read_register_value,
+        "args": {"register": 0x012B, "integer": True},
+        "interval": battery_interval,
+        "last_update": None,
+        "config": {
+            "name": "BMS Request Flag",
+            "icon": "mdi:flag",
+            "entity_category": "diagnostic",
+        },
+    },
+    # 0x012C  BmsStopChgPkgCnt
+    "battery/bms_stop_charge_pkg_count": {
+        "enabled": battery_enabled,
+        "value": modbus.read_register_value,
+        "args": {"register": 0x012C, "integer": True},
+        "interval": battery_interval,
+        "last_update": None,
+        "config": {
+            "name": "BMS Stop Charge Package Count",
+            "icon": "mdi:counter",
+            "entity_category": "diagnostic",
+        },
+    },
+    # 0x012D  BmsStopDchgPkgCnt
+    "battery/bms_stop_discharge_pkg_count": {
+        "enabled": battery_enabled,
+        "value": modbus.read_register_value,
+        "args": {"register": 0x012D, "integer": True},
+        "interval": battery_interval,
+        "last_update": None,
+        "config": {
+            "name": "BMS Stop Discharge Package Count",
+            "icon": "mdi:counter",
+            "entity_category": "diagnostic",
+        },
+    },
+    # 0x012E  BmsOfflinePkgCnt
+    "battery/bms_offline_pkg_count": {
+        "enabled": battery_enabled,
+        "value": modbus.read_register_value,
+        "args": {"register": 0x012E, "integer": True},
+        "interval": battery_interval,
+        "last_update": None,
+        "config": {
+            "name": "BMS Offline Package Count",
+            "icon": "mdi:counter",
+            "entity_category": "diagnostic",
+        },
+    },
+    # 0x012F  BmsSwVer
+    "battery/bms_software_version": {
+        "enabled": battery_enabled,
+        "value": modbus.read_register_value,
+        "args": {"register": 0x012F, "integer": True},
+        "interval": battery_interval,
+        "last_update": None,
+        "config": {
+            "name": "BMS Software Version",
+            "icon": "mdi:information",
+            "entity_category": "diagnostic",
+        },
+    },
+    # 0x0130  BmsHwVer
+    "battery/bms_hardware_version": {
+        "enabled": battery_enabled,
+        "value": modbus.read_register_value,
+        "args": {"register": 0x0130, "integer": True},
+        "interval": battery_interval,
+        "last_update": None,
+        "config": {
+            "name": "BMS Hardware Version",
+            "icon": "mdi:information",
+            "entity_category": "diagnostic",
+        },
+    },
+    # 0x0131  BmsSysFaultTbl
+    "battery/bms_sys_fault_table": {
+        "enabled": battery_enabled,
+        "value": modbus.read_register_value,
+        "args": {"register": 0x0131, "integer": True, "format_str": "{:x}", "prefix": "0x"},
+        "interval": battery_interval,
+        "last_update": None,
+        "config": {
+            "name": "BMS System Fault Table",
+            "icon": "mdi:alert-circle",
+            "entity_category": "diagnostic",
+        },
+    },
+    # 0x0136  BmsMaxCellVoltIdx
+    "battery/bms_max_cell_voltage_idx": {
+        "enabled": battery_enabled,
+        "value": modbus.read_register_value,
+        "args": {"register": 0x0136, "integer": True},
+        "interval": battery_interval,
+        "last_update": None,
+        "config": {
+            "name": "BMS Max Cell Voltage Index",
+            "icon": "mdi:information",
+            "entity_category": "diagnostic",
+        },
+    },
+    # 0x0137  BmsMinCellVoltIdx
+    "battery/bms_min_cell_voltage_idx": {
+        "enabled": battery_enabled,
+        "value": modbus.read_register_value,
+        "args": {"register": 0x0137, "integer": True},
+        "interval": battery_interval,
+        "last_update": None,
+        "config": {
+            "name": "BMS Min Cell Voltage Index",
+            "icon": "mdi:information",
+            "entity_category": "diagnostic",
+        },
+    },
+    # 0x0138  BmsMaxCellTempIdx
+    "battery/bms_max_cell_temp_idx": {
+        "enabled": battery_enabled,
+        "value": modbus.read_register_value,
+        "args": {"register": 0x0138, "integer": True},
+        "interval": battery_interval,
+        "last_update": None,
+        "config": {
+            "name": "BMS Max Cell Temperature Index",
+            "icon": "mdi:information",
+            "entity_category": "diagnostic",
+        },
+    },
+    # 0x0139  BmsMinCellTempIdx
+    "battery/bms_min_cell_temp_idx": {
+        "enabled": battery_enabled,
+        "value": modbus.read_register_value,
+        "args": {"register": 0x0139, "integer": True},
+        "interval": battery_interval,
+        "last_update": None,
+        "config": {
+            "name": "BMS Min Cell Temperature Index",
+            "icon": "mdi:information",
+            "entity_category": "diagnostic",
         },
     },
     ############ PV3 #####################
@@ -955,6 +1324,7 @@ mqtt_config: dict[str, dict[str, any]] = {
         "interval": general_interval,
         "last_update": None,
         "topic_type": "switch",
+        "dangerous": True,
         "config": {
             "name": "Inverter Power",
             "icon": "mdi:power",
@@ -1101,7 +1471,6 @@ mqtt_config: dict[str, dict[str, any]] = {
             "name": "Load Ratio A",
             "icon": "mdi:current-ac",
             "unit_of_measurement": "%",
-            "device_class": "percentage",
             "state_class": "measurement",
         },
     },
@@ -1330,7 +1699,6 @@ mqtt_config: dict[str, dict[str, any]] = {
             "name": "Load Ratio B",
             "icon": "mdi:current-ac",
             "unit_of_measurement": "%",
-            "device_class": "percentage",
             "state_class": "measurement",
         },
     },
@@ -1345,7 +1713,6 @@ mqtt_config: dict[str, dict[str, any]] = {
             "name": "Load Ratio C",
             "icon": "mdi:current-ac",
             "unit_of_measurement": "%",
-            "device_class": "percentage",
             "state_class": "measurement",
         },
     },
@@ -1386,7 +1753,7 @@ mqtt_config: dict[str, dict[str, any]] = {
     "ct/power_a": {
         "enabled": split_phase >= 1,
         "value": modbus.read_register_value,
-        "args": {"register": 0x023A, "signed": True, "integer": True},
+        "args": {"register": 0x023A, "scale": -1, "signed": True, "integer": True},
         "interval": grid_interval,
         "last_update": None,
         "last_value": 0,
@@ -1403,7 +1770,7 @@ mqtt_config: dict[str, dict[str, any]] = {
     "ct/power_b": {
         "enabled": split_phase >= 2,
         "value": modbus.read_register_value,
-        "args": {"register": 0x023B, "signed": True, "integer": True},
+        "args": {"register": 0x023B, "scale": -1, "signed": True, "integer": True},
         "interval": grid_interval,
         "last_update": None,
         "last_value": 0,
@@ -1420,7 +1787,7 @@ mqtt_config: dict[str, dict[str, any]] = {
     "ct/power_c": {
         "enabled": split_phase >= 3,
         "value": modbus.read_register_value,
-        "args": {"register": 0x023C, "signed": True, "integer": True},
+        "args": {"register": 0x023C, "scale": -1, "signed": True, "integer": True},
         "interval": grid_interval,
         "last_update": None,
         "last_value": 0,
@@ -1528,6 +1895,353 @@ mqtt_config: dict[str, dict[str, any]] = {
             "state_class": "measurement",
         },
     },
+    ############ P02 Inverter Data #####################
+    # 0x0211  PriorityFlag
+    "inverter/priority_flag": {
+        "enabled": True,
+        "value": modbus.read_register_value,
+        "args": {"register": 0x0211, "integer": True},
+        "interval": inverter_interval,
+        "last_update": None,
+        "config": {
+            "name": "Priority Flag",
+            "icon": "mdi:flag",
+            "entity_category": "diagnostic",
+        },
+    },
+    ############ Generator Port #####################
+    # 0x0243  GenPortActivePowerA
+    "gen/port_active_power_a": {
+        "enabled": split_phase >= 1,
+        "value": modbus.read_register_value,
+        "args": {"register": 0x0243, "signed": True, "integer": True},
+        "interval": grid_interval,
+        "last_update": None,
+        "config": {
+            "name": "Generator Port Active Power A",
+            "icon": "mdi:engine",
+            "unit_of_measurement": "W",
+            "device_class": "power",
+            "state_class": "measurement",
+        },
+    },
+    # 0x0244  GenPortActivePowerB
+    "gen/port_active_power_b": {
+        "enabled": split_phase >= 2,
+        "value": modbus.read_register_value,
+        "args": {"register": 0x0244, "signed": True, "integer": True},
+        "interval": grid_interval,
+        "last_update": None,
+        "config": {
+            "name": "Generator Port Active Power B",
+            "icon": "mdi:engine",
+            "unit_of_measurement": "W",
+            "device_class": "power",
+            "state_class": "measurement",
+        },
+    },
+    # 0x0245  GenPortActivePowerC
+    "gen/port_active_power_c": {
+        "enabled": split_phase >= 3,
+        "value": modbus.read_register_value,
+        "args": {"register": 0x0245, "signed": True, "integer": True},
+        "interval": grid_interval,
+        "last_update": None,
+        "config": {
+            "name": "Generator Port Active Power C",
+            "icon": "mdi:engine",
+            "unit_of_measurement": "W",
+            "device_class": "power",
+            "state_class": "measurement",
+        },
+    },
+    # 0x0246  GenPortAppPowerA
+    "gen/port_apparent_power_a": {
+        "enabled": split_phase >= 1,
+        "value": modbus.read_register_value,
+        "args": {"register": 0x0246, "integer": True},
+        "interval": grid_interval,
+        "last_update": None,
+        "config": {
+            "name": "Generator Port Apparent Power A",
+            "icon": "mdi:engine",
+            "unit_of_measurement": "VA",
+            "device_class": "apparent_power",
+            "state_class": "measurement",
+        },
+    },
+    # 0x0247  GenPortAppPowerB
+    "gen/port_apparent_power_b": {
+        "enabled": split_phase >= 2,
+        "value": modbus.read_register_value,
+        "args": {"register": 0x0247, "integer": True},
+        "interval": grid_interval,
+        "last_update": None,
+        "config": {
+            "name": "Generator Port Apparent Power B",
+            "icon": "mdi:engine",
+            "unit_of_measurement": "VA",
+            "device_class": "apparent_power",
+            "state_class": "measurement",
+        },
+    },
+    # 0x0248  GenPortAppPowerC
+    "gen/port_apparent_power_c": {
+        "enabled": split_phase >= 3,
+        "value": modbus.read_register_value,
+        "args": {"register": 0x0248, "integer": True},
+        "interval": grid_interval,
+        "last_update": None,
+        "config": {
+            "name": "Generator Port Apparent Power C",
+            "icon": "mdi:engine",
+            "unit_of_measurement": "VA",
+            "device_class": "apparent_power",
+            "state_class": "measurement",
+        },
+    },
+    # 0x0249  GenPortCurrA
+    "gen/port_current_a": {
+        "enabled": split_phase >= 1,
+        "value": modbus.read_register_value,
+        "args": {"register": 0x0249, "scale": 0.1, "signed": True},
+        "interval": grid_interval,
+        "last_update": None,
+        "config": {
+            "name": "Generator Port Current A",
+            "icon": "mdi:current-ac",
+            "unit_of_measurement": "A",
+            "device_class": "current",
+            "state_class": "measurement",
+        },
+    },
+    # 0x024A  GenPortCurrB
+    "gen/port_current_b": {
+        "enabled": split_phase >= 2,
+        "value": modbus.read_register_value,
+        "args": {"register": 0x024A, "scale": 0.1, "signed": True},
+        "interval": grid_interval,
+        "last_update": None,
+        "config": {
+            "name": "Generator Port Current B",
+            "icon": "mdi:current-ac",
+            "unit_of_measurement": "A",
+            "device_class": "current",
+            "state_class": "measurement",
+        },
+    },
+    # 0x024B  GenPortCurrC
+    "gen/port_current_c": {
+        "enabled": split_phase >= 3,
+        "value": modbus.read_register_value,
+        "args": {"register": 0x024B, "scale": 0.1, "signed": True},
+        "interval": grid_interval,
+        "last_update": None,
+        "config": {
+            "name": "Generator Port Current C",
+            "icon": "mdi:current-ac",
+            "unit_of_measurement": "A",
+            "device_class": "current",
+            "state_class": "measurement",
+        },
+    },
+    # 0x0256  GenPortVoltA
+    "gen/port_voltage_a": {
+        "enabled": split_phase >= 1,
+        "value": modbus.read_register_value,
+        "args": {"register": 0x0256, "scale": 0.1},
+        "interval": grid_interval,
+        "last_update": None,
+        "config": {
+            "name": "Generator Port Voltage A",
+            "icon": "mdi:flash-outline",
+            "unit_of_measurement": "V",
+            "device_class": "voltage",
+            "state_class": "measurement",
+        },
+    },
+    # 0x0257  GenPortVoltB
+    "gen/port_voltage_b": {
+        "enabled": split_phase >= 2,
+        "value": modbus.read_register_value,
+        "args": {"register": 0x0257, "scale": 0.1},
+        "interval": grid_interval,
+        "last_update": None,
+        "config": {
+            "name": "Generator Port Voltage B",
+            "icon": "mdi:flash-outline",
+            "unit_of_measurement": "V",
+            "device_class": "voltage",
+            "state_class": "measurement",
+        },
+    },
+    # 0x0258  GenPortVoltC
+    "gen/port_voltage_c": {
+        "enabled": split_phase >= 3,
+        "value": modbus.read_register_value,
+        "args": {"register": 0x0258, "scale": 0.1},
+        "interval": grid_interval,
+        "last_update": None,
+        "config": {
+            "name": "Generator Port Voltage C",
+            "icon": "mdi:flash-outline",
+            "unit_of_measurement": "V",
+            "device_class": "voltage",
+            "state_class": "measurement",
+        },
+    },
+    # 0x0259  GenPortFreq
+    "gen/port_frequency": {
+        "enabled": True,
+        "value": modbus.read_register_value,
+        "args": {"register": 0x0259, "scale": 0.01},
+        "interval": grid_interval,
+        "last_update": None,
+        "config": {
+            "name": "Generator Port Frequency",
+            "icon": "mdi:pulse",
+            "unit_of_measurement": "Hz",
+            "device_class": "frequency",
+            "state_class": "measurement",
+        },
+    },
+    ############ Micro Inverter #####################
+    # 0x025A  MicroInvPowerA
+    "inverter/micro_power_a": {
+        "enabled": split_phase >= 1,
+        "value": modbus.read_register_value,
+        "args": {"register": 0x025A, "signed": True, "integer": True},
+        "interval": inverter_interval,
+        "last_update": None,
+        "config": {
+            "name": "Micro Inverter Power A",
+            "icon": "mdi:lightning-bolt",
+            "unit_of_measurement": "W",
+            "device_class": "power",
+            "state_class": "measurement",
+        },
+    },
+    # 0x025B  MicroInvPowerB
+    "inverter/micro_power_b": {
+        "enabled": split_phase >= 2,
+        "value": modbus.read_register_value,
+        "args": {"register": 0x025B, "signed": True, "integer": True},
+        "interval": inverter_interval,
+        "last_update": None,
+        "config": {
+            "name": "Micro Inverter Power B",
+            "icon": "mdi:lightning-bolt",
+            "unit_of_measurement": "W",
+            "device_class": "power",
+            "state_class": "measurement",
+        },
+    },
+    # 0x025C  MicroInvPowerC
+    "inverter/micro_power_c": {
+        "enabled": split_phase >= 3,
+        "value": modbus.read_register_value,
+        "args": {"register": 0x025C, "signed": True, "integer": True},
+        "interval": inverter_interval,
+        "last_update": None,
+        "config": {
+            "name": "Micro Inverter Power C",
+            "icon": "mdi:lightning-bolt",
+            "unit_of_measurement": "W",
+            "device_class": "power",
+            "state_class": "measurement",
+        },
+    },
+    ############ Additional CT (Second CT) #####################
+    # 0x025D  CtActivePowerA
+    "ct2/power_a": {
+        "enabled": split_phase >= 1,
+        "value": modbus.read_register_value,
+        "args": {"register": 0x025D, "scale": -1, "signed": True, "integer": True},
+        "interval": grid_interval,
+        "last_update": None,
+        "config": {
+            "name": "CT2 Power A",
+            "icon": "mdi:current-ac",
+            "unit_of_measurement": "W",
+            "device_class": "power",
+            "state_class": "measurement",
+        },
+    },
+    # 0x025E  CtActivePowerB
+    "ct2/power_b": {
+        "enabled": split_phase >= 2,
+        "value": modbus.read_register_value,
+        "args": {"register": 0x025E, "scale": -1, "signed": True, "integer": True},
+        "interval": grid_interval,
+        "last_update": None,
+        "config": {
+            "name": "CT2 Power B",
+            "icon": "mdi:current-ac",
+            "unit_of_measurement": "W",
+            "device_class": "power",
+            "state_class": "measurement",
+        },
+    },
+    # 0x025F  CtActivePowerC
+    "ct2/power_c": {
+        "enabled": split_phase >= 3,
+        "value": modbus.read_register_value,
+        "args": {"register": 0x025F, "scale": -1, "signed": True, "integer": True},
+        "interval": grid_interval,
+        "last_update": None,
+        "config": {
+            "name": "CT2 Power C",
+            "icon": "mdi:current-ac",
+            "unit_of_measurement": "W",
+            "device_class": "power",
+            "state_class": "measurement",
+        },
+    },
+    # 0x0260  CtApparentPowerA
+    "ct2/apparent_power_a": {
+        "enabled": split_phase >= 1,
+        "value": modbus.read_register_value,
+        "args": {"register": 0x0260, "integer": True},
+        "interval": grid_interval,
+        "last_update": None,
+        "config": {
+            "name": "CT2 Apparent Power A",
+            "icon": "mdi:current-ac",
+            "unit_of_measurement": "VA",
+            "device_class": "apparent_power",
+            "state_class": "measurement",
+        },
+    },
+    # 0x0261  CtApparentPowerB
+    "ct2/apparent_power_b": {
+        "enabled": split_phase >= 2,
+        "value": modbus.read_register_value,
+        "args": {"register": 0x0261, "integer": True},
+        "interval": grid_interval,
+        "last_update": None,
+        "config": {
+            "name": "CT2 Apparent Power B",
+            "icon": "mdi:current-ac",
+            "unit_of_measurement": "VA",
+            "device_class": "apparent_power",
+            "state_class": "measurement",
+        },
+    },
+    # 0x0262  CtApparentPowerC
+    "ct2/apparent_power_c": {
+        "enabled": split_phase >= 3,
+        "value": modbus.read_register_value,
+        "args": {"register": 0x0262, "integer": True},
+        "interval": grid_interval,
+        "last_update": None,
+        "config": {
+            "name": "CT2 Apparent Power C",
+            "icon": "mdi:current-ac",
+            "unit_of_measurement": "VA",
+            "device_class": "apparent_power",
+            "state_class": "measurement",
+        },
+    },
     # 0x024C  LoadRatioSum
     "load/parallel_ratio": {
         "enabled": parallel and simulate_parallel==0,
@@ -1539,7 +2253,6 @@ mqtt_config: dict[str, dict[str, any]] = {
             "name": "Parallel Load Ratio",
             "icon": "mdi:current-ac",
             "unit_of_measurement": "%",
-            "device_class": "percentage",
             "state_class": "measurement",
         },
     },
@@ -1694,11 +2407,11 @@ mqtt_config: dict[str, dict[str, any]] = {
             "mode:": "box",
         },
     },
-    # 0xE005  BatOverVolt
+    # 0xE205  GridChgCurrLimit
     "charging/grid_current_limit": {
         "enabled": battery_enabled,
         "value": modbus.read_register_value,
-        "args": {"register": 0xE005, "scale": 0.1},
+        "args": {"register": 0xE205, "scale": 0.1},
         "interval": general_interval,
         "last_update": None,
         "topic_type": "number",
@@ -2457,6 +3170,43 @@ mqtt_config: dict[str, dict[str, any]] = {
             "command_topic": "pv/power_priority",
         },
     },
+    # 0xE038  LeakageCurrDtcEn
+    "inverter/leakage_current_detect_enabled": {
+        "value": modbus.read_enabled_register,
+        "args": {"register": 0xE038},
+        "interval": general_interval,
+        "last_update": None,
+        "topic_type": "switch",
+        "config": {
+            "name": "Leakage Current Detect",
+            "icon": "mdi:water-alert",
+            "state_on": "Enabled",
+            "state_off": "Disabled",
+            "payload_on": "Enabled",
+            "payload_off": "Disabled",
+            "entity_category": "config",
+            "command_topic": "inverter/leakage_current_detect_enabled",
+        },
+    },
+    # 0xE03A  BattTemperCompEn
+    "battery/temp_compensation_enabled": {
+        "enabled": battery_enabled,
+        "value": modbus.read_enabled_register,
+        "args": {"register": 0xE03A},
+        "interval": general_interval,
+        "last_update": None,
+        "topic_type": "switch",
+        "config": {
+            "name": "Battery Temperature Compensation",
+            "icon": "mdi:thermometer-auto",
+            "state_on": "Enabled",
+            "state_off": "Disabled",
+            "payload_on": "Enabled",
+            "payload_off": "Disabled",
+            "entity_category": "config",
+            "command_topic": "battery/temp_compensation_enabled",
+        },
+    },
     # 0xE03B  TimedChg1StopSOC
     "charging/time_charge_1_soc_limit": {
         "enabled": battery_enabled,
@@ -2683,6 +3433,281 @@ mqtt_config: dict[str, dict[str, any]] = {
             "step": 1,
             "command_topic": "charging/time_charge_3_max_power",
             "mode:": "box",
+        },
+    },
+    ############ P05 Battery Parameters - Timed Stop Voltages #####################
+    # 0xE041  TimedChg1StopVolt
+    "charging/time_charge_1_stop_voltage": {
+        "enabled": battery_enabled,
+        "value": modbus.read_register_value,
+        "args": {"register": 0xE041, "scale": 0.1},
+        "interval": general_interval,
+        "last_update": None,
+        "topic_type": "number",
+        "config": {
+            "name": "Timed Charge 1 Stop Voltage",
+            "icon": "mdi:battery",
+            "unit_of_measurement": "V",
+            "device_class": "voltage",
+            "min": 20,
+            "max": 65,
+            "step": 0.1,
+            "entity_category": "config",
+            "command_topic": "charging/time_charge_1_stop_voltage",
+        },
+    },
+    # 0xE042  TimedChg2StopVolt
+    "charging/time_charge_2_stop_voltage": {
+        "enabled": battery_enabled,
+        "value": modbus.read_register_value,
+        "args": {"register": 0xE042, "scale": 0.1},
+        "interval": general_interval,
+        "last_update": None,
+        "topic_type": "number",
+        "config": {
+            "name": "Timed Charge 2 Stop Voltage",
+            "icon": "mdi:battery",
+            "unit_of_measurement": "V",
+            "device_class": "voltage",
+            "min": 20,
+            "max": 65,
+            "step": 0.1,
+            "entity_category": "config",
+            "command_topic": "charging/time_charge_2_stop_voltage",
+        },
+    },
+    # 0xE043  TimedChg3StopVolt
+    "charging/time_charge_3_stop_voltage": {
+        "enabled": battery_enabled,
+        "value": modbus.read_register_value,
+        "args": {"register": 0xE043, "scale": 0.1},
+        "interval": general_interval,
+        "last_update": None,
+        "topic_type": "number",
+        "config": {
+            "name": "Timed Charge 3 Stop Voltage",
+            "icon": "mdi:battery",
+            "unit_of_measurement": "V",
+            "device_class": "voltage",
+            "min": 20,
+            "max": 65,
+            "step": 0.1,
+            "entity_category": "config",
+            "command_topic": "charging/time_charge_3_stop_voltage",
+        },
+    },
+    # 0xE044  TimedDchg1StopVolt
+    "charging/time_discharge_1_stop_voltage": {
+        "enabled": battery_enabled,
+        "value": modbus.read_register_value,
+        "args": {"register": 0xE044, "scale": 0.1},
+        "interval": general_interval,
+        "last_update": None,
+        "topic_type": "number",
+        "config": {
+            "name": "Timed Discharge 1 Stop Voltage",
+            "icon": "mdi:battery",
+            "unit_of_measurement": "V",
+            "device_class": "voltage",
+            "min": 20,
+            "max": 65,
+            "step": 0.1,
+            "entity_category": "config",
+            "command_topic": "charging/time_discharge_1_stop_voltage",
+        },
+    },
+    # 0xE045  TimedDchg2StopVolt
+    "charging/time_discharge_2_stop_voltage": {
+        "enabled": battery_enabled,
+        "value": modbus.read_register_value,
+        "args": {"register": 0xE045, "scale": 0.1},
+        "interval": general_interval,
+        "last_update": None,
+        "topic_type": "number",
+        "config": {
+            "name": "Timed Discharge 2 Stop Voltage",
+            "icon": "mdi:battery",
+            "unit_of_measurement": "V",
+            "device_class": "voltage",
+            "min": 20,
+            "max": 65,
+            "step": 0.1,
+            "entity_category": "config",
+            "command_topic": "charging/time_discharge_2_stop_voltage",
+        },
+    },
+    # 0xE046  TimedDchg3StopVolt
+    "charging/time_discharge_3_stop_voltage": {
+        "enabled": battery_enabled,
+        "value": modbus.read_register_value,
+        "args": {"register": 0xE046, "scale": 0.1},
+        "interval": general_interval,
+        "last_update": None,
+        "topic_type": "number",
+        "config": {
+            "name": "Timed Discharge 3 Stop Voltage",
+            "icon": "mdi:battery",
+            "unit_of_measurement": "V",
+            "device_class": "voltage",
+            "min": 20,
+            "max": 65,
+            "step": 0.1,
+            "entity_category": "config",
+            "command_topic": "charging/time_discharge_3_stop_voltage",
+        },
+    },
+    ############ P05 Battery Parameters - SOC Balance & Smart Load #####################
+    # 0xE04E  OnGridDchgSocBalanceEn
+    "battery/on_grid_discharge_soc_balance_enabled": {
+        "enabled": battery_enabled,
+        "value": modbus.read_enabled_register,
+        "args": {"register": 0xE04E},
+        "interval": general_interval,
+        "last_update": None,
+        "topic_type": "switch",
+        "config": {
+            "name": "On-Grid Discharge SOC Balance Enabled",
+            "icon": "mdi:scale-balance",
+            "entity_category": "config",
+            "state_off": "Disabled",
+            "state_on": "Enabled",
+            "payload_off": "Disabled",
+            "payload_on": "Enabled",
+            "command_topic": "battery/on_grid_discharge_soc_balance_enabled",
+        },
+    },
+    # 0xE04F  OnGridChgSocBalanceEn
+    "battery/on_grid_charge_soc_balance_enabled": {
+        "enabled": battery_enabled,
+        "value": modbus.read_enabled_register,
+        "args": {"register": 0xE04F},
+        "interval": general_interval,
+        "last_update": None,
+        "topic_type": "switch",
+        "config": {
+            "name": "On-Grid Charge SOC Balance Enabled",
+            "icon": "mdi:scale-balance",
+            "entity_category": "config",
+            "state_off": "Disabled",
+            "state_on": "Enabled",
+            "payload_off": "Disabled",
+            "payload_on": "Enabled",
+            "command_topic": "battery/on_grid_charge_soc_balance_enabled",
+        },
+    },
+    # 0xE050  SocBalanceRatio
+    "battery/soc_balance_ratio": {
+        "enabled": battery_enabled,
+        "value": modbus.read_register_value,
+        "args": {"register": 0xE050, "integer": True},
+        "interval": general_interval,
+        "last_update": None,
+        "topic_type": "number",
+        "config": {
+            "name": "SOC Balance Ratio",
+            "icon": "mdi:percent",
+            "unit_of_measurement": "%",
+            "min": 0,
+            "max": 100,
+            "step": 1,
+            "entity_category": "config",
+            "command_topic": "battery/soc_balance_ratio",
+        },
+    },
+    # 0xE052  BattVoltSmartLoadOff
+    "battery/smart_load_voltage_off": {
+        "enabled": battery_enabled,
+        "value": modbus.read_register_value,
+        "args": {"register": 0xE052},
+        "interval": general_interval,
+        "last_update": None,
+        "topic_type": "number",
+        "config": {
+            "name": "Smart Load Off Voltage",
+            "icon": "mdi:battery-off",
+            "unit_of_measurement": "V",
+            "device_class": "voltage",
+            "min": 20,
+            "max": 65,
+            "step": 0.1,
+            "entity_category": "config",
+            "command_topic": "battery/smart_load_voltage_off",
+        },
+    },
+    # 0xE053  BattSocSmartLoadOn
+    "battery/smart_load_soc_on": {
+        "enabled": battery_enabled,
+        "value": modbus.read_register_value,
+        "args": {"register": 0xE053, "integer": True},
+        "interval": general_interval,
+        "last_update": None,
+        "topic_type": "number",
+        "config": {
+            "name": "Smart Load On SOC",
+            "icon": "mdi:battery-on",
+            "unit_of_measurement": "%",
+            "min": 0,
+            "max": 100,
+            "step": 1,
+            "entity_category": "config",
+            "command_topic": "battery/smart_load_soc_on",
+        },
+    },
+    # 0xE054  BattVoltSmartLoadOn
+    "battery/smart_load_voltage_on": {
+        "enabled": battery_enabled,
+        "value": modbus.read_battery_voltage_register,
+        "args": {"register": 0xE054},
+        "interval": general_interval,
+        "last_update": None,
+        "topic_type": "number",
+        "config": {
+            "name": "Smart Load On Voltage",
+            "icon": "mdi:battery-on",
+            "unit_of_measurement": "V",
+            "device_class": "voltage",
+            "min": 20,
+            "max": 65,
+            "step": 0.1,
+            "entity_category": "config",
+            "command_topic": "battery/smart_load_voltage_on",
+        },
+    },
+    # 0xE055  MaxConsumptionEn
+    "battery/max_consumption_enabled": {
+        "enabled": battery_enabled,
+        "value": modbus.read_enabled_register,
+        "args": {"register": 0xE055},
+        "interval": general_interval,
+        "last_update": None,
+        "topic_type": "switch",
+        "config": {
+            "name": "Max Consumption Enabled",
+            "icon": "mdi:meter-gas",
+            "entity_category": "config",
+            "state_off": "Disabled",
+            "state_on": "Enabled",
+            "payload_off": "Disabled",
+            "payload_on": "Enabled",
+            "command_topic": "battery/max_consumption_enabled",
+        },
+    },
+    # 0xE200  Rs485AddrSet
+    "system/rs485_address_set": {
+        "enabled": system_enabled,
+        "value": modbus.read_register_value,
+        "args": {"register": 0xE200, "integer": True},
+        "interval": system_interval,
+        "last_update": None,
+        "topic_type": "number",
+        "config": {
+            "name": "RS-485 Address",
+            "icon": "mdi:connection",
+            "min": 1,
+            "max": 255,
+            "step": 1,
+            "entity_category": "config",
+            "command_topic": "system/rs485_address",
         },
     },
     # 0xE201  ParallMode
@@ -2993,6 +4018,1507 @@ mqtt_config: dict[str, dict[str, any]] = {
             "command_topic": "inverter/generator_mode",
         },
     },
+    ############ P07 Inverter User Settings #####################
+    # 0xE207  N_G_FuncEn
+    "inverter/neutral_ground_function_enabled": {
+        "value": modbus.read_enabled_register,
+        "args": {"register": 0xE207},
+        "interval": general_interval,
+        "last_update": None,
+        "topic_type": "switch",
+        "config": {
+            "name": "Allow Inverter Neutral-Ground Bonding",
+            "icon": "mdi:ground",
+            "entity_category": "config",
+            "state_off": "Disabled",
+            "state_on": "Enabled",
+            "payload_off": "Disabled",
+            "payload_on": "Enabled",
+            "command_topic": "inverter/neutral_ground_function_enabled",
+        },
+    },
+    # 0xE218  DeratePower
+    "inverter/derate_power": {
+        "value": modbus.read_register_value,
+        "args": {"register": 0xE218, "integer": True},
+        "interval": general_interval,
+        "last_update": None,
+        "topic_type": "number",
+        "config": {
+            "name": "Derate Power",
+            "icon": "mdi:flash",
+            "unit_of_measurement": "W",
+            "device_class": "power",
+            "min": 0,
+            "max": 12000,
+            "step": 1,
+            "entity_category": "config",
+            "command_topic": "inverter/derate_power",
+        },
+    },
+    # 0xE21C  MaxLineCurrent
+    "inverter/max_line_current": {
+        "value": modbus.read_register_value,
+        "args": {"register": 0xE21C, "scale": 0.1},
+        "interval": general_interval,
+        "last_update": None,
+        "topic_type": "number",
+        "config": {
+            "name": "Max Line Current",
+            "icon": "mdi:current-ac",
+            "unit_of_measurement": "A",
+            "device_class": "current",
+            "min": 0,
+            "max": 200,
+            "step": 0.1,
+            "entity_category": "config",
+            "command_topic": "inverter/max_line_current",
+        },
+    },
+    # 0xE21D  MaxLinePower
+    "inverter/max_line_power": {
+        "value": modbus.read_register_value,
+        "args": {"register": 0xE21D, "integer": True},
+        "interval": general_interval,
+        "last_update": None,
+        "topic_type": "number",
+        "config": {
+            "name": "Max Grid Import",
+            "icon": "mdi:flash",
+            "unit_of_measurement": "W",
+            "device_class": "power",
+            "min": 0,
+            "max": 12000,
+            "step": 1,
+            "entity_category": "config",
+            "command_topic": "inverter/max_line_power",
+        },
+    },
+    # 0xE21E  OutputPhaseSet
+    "inverter/output_phase_set": {
+        "value": modbus.read_register_value,
+        "args": {"register": 0xE21E, "integer": True},
+        "interval": general_interval,
+        "last_update": None,
+        "topic_type": "number",
+        "config": {
+            "name": "Output Phase Set",
+            "icon": "mdi:phase-variant",
+            "entity_category": "config",
+            "command_topic": "inverter/output_phase_set",
+        },
+    },
+    # 0xE220  GenChgMaxCurr
+    "inverter/gen_charge_max_current": {
+        "value": modbus.read_register_value,
+        "args": {"register": 0xE220, "scale": 0.1},
+        "interval": general_interval,
+        "last_update": None,
+        "topic_type": "number",
+        "config": {
+            "name": "Generator Charge Max Current",
+            "icon": "mdi:current-ac",
+            "unit_of_measurement": "A",
+            "device_class": "current",
+            "min": 0,
+            "max": 200,
+            "step": 0.1,
+            "entity_category": "config",
+            "command_topic": "inverter/gen_charge_max_current",
+        },
+    },
+    # 0xE221  GenRatePower
+    "inverter/gen_rate_power": {
+        "value": modbus.read_register_value,
+        "args": {"register": 0xE221, "integer": True},
+        "interval": general_interval,
+        "last_update": None,
+        "topic_type": "number",
+        "config": {
+            "name": "Generator Rated Power",
+            "icon": "mdi:engine",
+            "unit_of_measurement": "W",
+            "device_class": "power",
+            "min": 0,
+            "max": 12000,
+            "step": 1,
+            "entity_category": "config",
+            "command_topic": "inverter/gen_rate_power",
+        },
+    },
+    # 0xE222  PvToSmartLoadEn
+    "inverter/pv_to_smart_load_enabled": {
+        "value": modbus.read_enabled_register,
+        "args": {"register": 0xE222},
+        "interval": general_interval,
+        "last_update": None,
+        "topic_type": "switch",
+        "config": {
+            "name": "PV to Smart Load Enabled",
+            "icon": "mdi:solar-power",
+            "entity_category": "config",
+            "state_off": "Disabled",
+            "state_on": "Enabled",
+            "payload_off": "Disabled",
+            "payload_on": "Enabled",
+            "command_topic": "inverter/pv_to_smart_load_enabled",
+        },
+    },
+    # 0xE223  GridToSmartLoadEn
+    "inverter/grid_to_smart_load_enabled": {
+        "value": modbus.read_enabled_register,
+        "args": {"register": 0xE223},
+        "interval": general_interval,
+        "last_update": None,
+        "topic_type": "switch",
+        "config": {
+            "name": "Grid to Smart Load Enabled",
+            "icon": "mdi:transmission-tower",
+            "entity_category": "config",
+            "state_off": "Disabled",
+            "state_on": "Enabled",
+            "payload_off": "Disabled",
+            "payload_on": "Enabled",
+            "command_topic": "inverter/grid_to_smart_load_enabled",
+        },
+    },
+    # 0xE224  WeekSet
+    "inverter/week_set": {
+        "value": modbus.read_register_value,
+        "args": {"register": 0xE224, "integer": True},
+        "interval": general_interval,
+        "last_update": None,
+        "topic_type": "number",
+        "config": {
+            "name": "Week Set",
+            "icon": "mdi:calendar-week",
+            "entity_category": "config",
+            "command_topic": "inverter/week_set",
+        },
+    },
+    # 0xE225  WeekToOnTimeEn
+    "inverter/week_to_on_time_enabled": {
+        "value": modbus.read_enabled_register,
+        "args": {"register": 0xE225},
+        "interval": general_interval,
+        "last_update": None,
+        "topic_type": "switch",
+        "config": {
+            "name": "Week to On Time Enabled",
+            "icon": "mdi:calendar-week",
+            "entity_category": "config",
+            "state_off": "Disabled",
+            "state_on": "Enabled",
+            "payload_off": "Disabled",
+            "payload_on": "Enabled",
+            "command_topic": "inverter/week_to_on_time_enabled",
+        },
+    },
+    # 0xE226  LoadConsumTotalTh
+    "load/consumption_total_threshold": {
+        "value": modbus.read_register_value,
+        "args": {"register": 0xE226, "integer": True},
+        "interval": general_interval,
+        "last_update": None,
+        "topic_type": "number",
+        "config": {
+            "name": "Load Consumption Total Threshold",
+            "icon": "mdi:meter-gas",
+            "unit_of_measurement": "W",
+            "device_class": "power",
+            "min": 0,
+            "max": 12000,
+            "step": 1,
+            "entity_category": "config",
+            "command_topic": "load/consumption_total_threshold",
+        },
+    },
+    # 0xE228  MpptInputWindEn
+    "inverter/mppt_input_wind_enabled": {
+        "value": modbus.read_enabled_register,
+        "args": {"register": 0xE228},
+        "interval": general_interval,
+        "last_update": None,
+        "topic_type": "switch",
+        "config": {
+            "name": "MPPT Input Wind Enabled",
+            "icon": "mdi:wind-power",
+            "entity_category": "config",
+            "state_off": "Disabled",
+            "state_on": "Enabled",
+            "payload_off": "Disabled",
+            "payload_on": "Enabled",
+            "command_topic": "inverter/mppt_input_wind_enabled",
+        },
+    },
+    # 0xE229  DryContactGridVoltTh
+    "inverter/dry_contact_grid_voltage_threshold": {
+        "value": modbus.read_register_value,
+        "args": {"register": 0xE229, "scale": 0.1},
+        "interval": general_interval,
+        "last_update": None,
+        "topic_type": "number",
+        "config": {
+            "name": "Dry Contact Grid Voltage Threshold",
+            "icon": "mdi:transmission-tower",
+            "unit_of_measurement": "V",
+            "device_class": "voltage",
+            "min": 0,
+            "max": 300,
+            "step": 0.1,
+            "entity_category": "config",
+            "command_topic": "inverter/dry_contact_grid_voltage_threshold",
+        },
+    },
+    # 0xE22A  DryContactPVtoGridTh
+    "inverter/dry_contact_pv_to_grid_threshold": {
+        "value": modbus.read_register_value,
+        "args": {"register": 0xE22A, "integer": True},
+        "interval": general_interval,
+        "last_update": None,
+        "topic_type": "number",
+        "config": {
+            "name": "Dry Contact PV to Grid Threshold",
+            "icon": "mdi:solar-power",
+            "unit_of_measurement": "W",
+            "device_class": "power",
+            "min": 0,
+            "max": 12000,
+            "step": 1,
+            "entity_category": "config",
+            "command_topic": "inverter/dry_contact_pv_to_grid_threshold",
+        },
+    },
+    ############ P08 Grid Connection Parameters #####################
+    # 0xE400  GridActivePowerSet
+    "grid/active_power_set": {
+        "value": modbus.read_register_value,
+        "args": {"register": 0xE400, "signed": True, "integer": True},
+        "interval": general_interval,
+        "last_update": None,
+        "topic_type": "number",
+        "config": {
+            "name": "Max Grid Export",
+            "icon": "mdi:flash",
+            "unit_of_measurement": "W",
+            "device_class": "power",
+            "min": -12000,
+            "max": 12000,
+            "step": 1,
+            "entity_category": "config",
+            "command_topic": "grid/active_power_set",
+        },
+    },
+    # 0xE401  GridPfSet
+    "grid/pf_set": {
+        "value": modbus.read_register_value,
+        "args": {"register": 0xE401, "scale": 0.001},
+        "interval": general_interval,
+        "last_update": None,
+        "topic_type": "number",
+        "config": {
+            "name": "Grid Power Factor Set",
+            "icon": "mdi:cosine-wave",
+            "min": 0,
+            "max": 1,
+            "step": 0.001,
+            "entity_category": "config",
+            "command_topic": "grid/pf_set",
+        },
+    },
+    # 0xE402  GridQset
+    "grid/q_set": {
+        "value": modbus.read_register_value,
+        "args": {"register": 0xE402, "signed": True, "integer": True},
+        "interval": general_interval,
+        "last_update": None,
+        "topic_type": "number",
+        "config": {
+            "name": "Grid Reactive Power Set",
+            "icon": "mdi:sine-wave",
+            "unit_of_measurement": "VAR",
+            "min": -12000,
+            "max": 12000,
+            "step": 1,
+            "entity_category": "config",
+            "command_topic": "grid/q_set",
+        },
+    },
+    # 0xE403  GridStandard
+    "grid/standard": {
+        "value": modbus.read_register_value,
+        "args": {"register": 0xE403, "integer": True},
+        "interval": general_interval,
+        "last_update": None,
+        "topic_type": "number",
+        "config": {
+            "name": "Grid Standard",
+            "icon": "mdi:transmission-tower",
+            "entity_category": "config",
+            "command_topic": "grid/standard",
+        },
+    },
+    # 0xE404  GridUVLevel1
+    "grid/uv_level_1": {
+        "value": modbus.read_register_value,
+        "args": {"register": 0xE404, "scale": 0.1},
+        "interval": general_interval,
+        "last_update": None,
+        "topic_type": "number",
+        "config": {
+            "name": "Grid UV Level 1",
+            "icon": "mdi:alert-circle",
+            "unit_of_measurement": "V",
+            "device_class": "voltage",
+            "min": 0,
+            "max": 270,
+            "step": 0.1,
+            "entity_category": "config",
+            "command_topic": "grid/uv_level_1",
+        },
+    },
+    # 0xE405  GridUVTime1
+    "grid/uv_time_1": {
+        "value": modbus.read_register_value,
+        "args": {"register": 0xE405, "scale": 0.02},
+        "interval": general_interval,
+        "last_update": None,
+        "topic_type": "number",
+        "config": {
+            "name": "Grid UV Time 1",
+            "icon": "mdi:timer",
+            "unit_of_measurement": "s",
+            "min": 0,
+            "max": 300,
+            "step": 0.02,
+            "entity_category": "config",
+            "command_topic": "grid/uv_time_1",
+        },
+    },
+    # 0xE406  GridUVResumLevel1
+    "grid/uv_resum_level_1": {
+        "value": modbus.read_register_value,
+        "args": {"register": 0xE406, "scale": 0.1},
+        "interval": general_interval,
+        "last_update": None,
+        "topic_type": "number",
+        "config": {
+            "name": "Grid UV Resume Level 1",
+            "icon": "mdi:alert-circle",
+            "unit_of_measurement": "V",
+            "device_class": "voltage",
+            "min": 0,
+            "max": 270,
+            "step": 0.1,
+            "entity_category": "config",
+            "command_topic": "grid/uv_resum_level_1",
+        },
+    },
+    # 0xE407  GridUVResumTime1
+    "grid/uv_resum_time_1": {
+        "value": modbus.read_register_value,
+        "args": {"register": 0xE407, "scale": 0.02},
+        "interval": general_interval,
+        "last_update": None,
+        "topic_type": "number",
+        "config": {
+            "name": "Grid UV Resume Time 1",
+            "icon": "mdi:timer",
+            "unit_of_measurement": "s",
+            "min": 0,
+            "max": 300,
+            "step": 0.02,
+            "entity_category": "config",
+            "command_topic": "grid/uv_resum_time_1",
+        },
+    },
+    # 0xE408  GridUVLevel2
+    "grid/uv_level_2": {
+        "value": modbus.read_register_value,
+        "args": {"register": 0xE408, "scale": 0.1},
+        "interval": general_interval,
+        "last_update": None,
+        "topic_type": "number",
+        "config": {
+            "name": "Grid UV Level 2",
+            "icon": "mdi:alert-circle",
+            "unit_of_measurement": "V",
+            "device_class": "voltage",
+            "min": 0,
+            "max": 270,
+            "step": 0.1,
+            "entity_category": "config",
+            "command_topic": "grid/uv_level_2",
+        },
+    },
+    # 0xE409  GridUVTime2
+    "grid/uv_time_2": {
+        "value": modbus.read_register_value,
+        "args": {"register": 0xE409, "scale": 0.02},
+        "interval": general_interval,
+        "last_update": None,
+        "topic_type": "number",
+        "config": {
+            "name": "Grid UV Time 2",
+            "icon": "mdi:timer",
+            "unit_of_measurement": "s",
+            "min": 0,
+            "max": 300,
+            "step": 0.02,
+            "entity_category": "config",
+            "command_topic": "grid/uv_time_2",
+        },
+    },
+    # 0xE40A  GridUVResumLevel2
+    "grid/uv_resum_level_2": {
+        "value": modbus.read_register_value,
+        "args": {"register": 0xE40A, "scale": 0.1},
+        "interval": general_interval,
+        "last_update": None,
+        "topic_type": "number",
+        "config": {
+            "name": "Grid UV Resume Level 2",
+            "icon": "mdi:alert-circle",
+            "unit_of_measurement": "V",
+            "device_class": "voltage",
+            "min": 0,
+            "max": 270,
+            "step": 0.1,
+            "entity_category": "config",
+            "command_topic": "grid/uv_resum_level_2",
+        },
+    },
+    # 0xE40B  GridUVResumTime2
+    "grid/uv_resum_time_2": {
+        "value": modbus.read_register_value,
+        "args": {"register": 0xE40B, "scale": 0.02},
+        "interval": general_interval,
+        "last_update": None,
+        "topic_type": "number",
+        "config": {
+            "name": "Grid UV Resume Time 2",
+            "icon": "mdi:timer",
+            "unit_of_measurement": "s",
+            "min": 0,
+            "max": 300,
+            "step": 0.02,
+            "entity_category": "config",
+            "command_topic": "grid/uv_resum_time_2",
+        },
+    },
+    # 0xE40C  GridOVLevel1
+    "grid/ov_level_1": {
+        "value": modbus.read_register_value,
+        "args": {"register": 0xE40C, "scale": 0.1},
+        "interval": general_interval,
+        "last_update": None,
+        "topic_type": "number",
+        "config": {
+            "name": "Grid OV Level 1",
+            "icon": "mdi:alert-circle",
+            "unit_of_measurement": "V",
+            "device_class": "voltage",
+            "min": 0,
+            "max": 270,
+            "step": 0.1,
+            "entity_category": "config",
+            "command_topic": "grid/ov_level_1",
+        },
+    },
+    # 0xE40D  GridOVTime1
+    "grid/ov_time_1": {
+        "value": modbus.read_register_value,
+        "args": {"register": 0xE40D, "scale": 0.02},
+        "interval": general_interval,
+        "last_update": None,
+        "topic_type": "number",
+        "config": {
+            "name": "Grid OV Time 1",
+            "icon": "mdi:timer",
+            "unit_of_measurement": "s",
+            "min": 0,
+            "max": 300,
+            "step": 0.02,
+            "entity_category": "config",
+            "command_topic": "grid/ov_time_1",
+        },
+    },
+    # 0xE40E  GridOVResumLevel1
+    "grid/ov_resum_level_1": {
+        "value": modbus.read_register_value,
+        "args": {"register": 0xE40E, "scale": 0.1},
+        "interval": general_interval,
+        "last_update": None,
+        "topic_type": "number",
+        "config": {
+            "name": "Grid OV Resume Level 1",
+            "icon": "mdi:alert-circle",
+            "unit_of_measurement": "V",
+            "device_class": "voltage",
+            "min": 0,
+            "max": 320,
+            "step": 0.1,
+            "entity_category": "config",
+            "command_topic": "grid/ov_resum_level_1",
+        },
+    },
+    # 0xE40F  GridOVResumTime1
+    "grid/ov_resum_time_1": {
+        "value": modbus.read_register_value,
+        "args": {"register": 0xE40F, "scale": 0.02},
+        "interval": general_interval,
+        "last_update": None,
+        "topic_type": "number",
+        "config": {
+            "name": "Grid OV Resume Time 1",
+            "icon": "mdi:timer",
+            "unit_of_measurement": "s",
+            "min": 0,
+            "max": 300,
+            "step": 0.02,
+            "entity_category": "config",
+            "command_topic": "grid/ov_resum_time_1",
+        },
+    },
+    # 0xE410  GridOVLevel2
+    "grid/ov_level_2": {
+        "value": modbus.read_register_value,
+        "args": {"register": 0xE410, "scale": 0.1},
+        "interval": general_interval,
+        "last_update": None,
+        "topic_type": "number",
+        "config": {
+            "name": "Grid OV Level 2",
+            "icon": "mdi:alert-circle",
+            "unit_of_measurement": "V",
+            "device_class": "voltage",
+            "min": 0,
+            "max": 320,
+            "step": 0.1,
+            "entity_category": "config",
+            "command_topic": "grid/ov_level_2",
+        },
+    },
+    # 0xE411  GridOVTime2
+    "grid/ov_time_2": {
+        "value": modbus.read_register_value,
+        "args": {"register": 0xE411, "scale": 0.02},
+        "interval": general_interval,
+        "last_update": None,
+        "topic_type": "number",
+        "config": {
+            "name": "Grid OV Time 2",
+            "icon": "mdi:timer",
+            "unit_of_measurement": "s",
+            "min": 0,
+            "max": 300,
+            "step": 0.02,
+            "entity_category": "config",
+            "command_topic": "grid/ov_time_2",
+        },
+    },
+    # 0xE412  GridOVResumLevel2
+    "grid/ov_resum_level_2": {
+        "value": modbus.read_register_value,
+        "args": {"register": 0xE412, "scale": 0.1},
+        "interval": general_interval,
+        "last_update": None,
+        "topic_type": "number",
+        "config": {
+            "name": "Grid OV Resume Level 2",
+            "icon": "mdi:alert-circle",
+            "unit_of_measurement": "V",
+            "device_class": "voltage",
+            "min": 0,
+            "max": 320,
+            "step": 0.1,
+            "entity_category": "config",
+            "command_topic": "grid/ov_resum_level_2",
+        },
+    },
+    # 0xE413  GridOVResumTime2
+    "grid/ov_resum_time_2": {
+        "value": modbus.read_register_value,
+        "args": {"register": 0xE413, "scale": 0.02},
+        "interval": general_interval,
+        "last_update": None,
+        "topic_type": "number",
+        "config": {
+            "name": "Grid OV Resume Time 2",
+            "icon": "mdi:timer",
+            "unit_of_measurement": "s",
+            "min": 0,
+            "max": 300,
+            "step": 0.02,
+            "entity_category": "config",
+            "command_topic": "grid/ov_resum_time_2",
+        },
+    },
+    # 0xE414  GridUFLevel1
+    "grid/uf_level_1": {
+        "value": modbus.read_register_value,
+        "args": {"register": 0xE414, "scale": 0.01},
+        "interval": general_interval,
+        "last_update": None,
+        "topic_type": "number",
+        "config": {
+            "name": "Grid UF Level 1",
+            "icon": "mdi:alert-circle",
+            "unit_of_measurement": "Hz",
+            "device_class": "frequency",
+            "min": 0,
+            "max": 100,
+            "step": 0.01,
+            "entity_category": "config",
+            "command_topic": "grid/uf_level_1",
+        },
+    },
+    # 0xE415  GridUFTime1
+    "grid/uf_time_1": {
+        "value": modbus.read_register_value,
+        "args": {"register": 0xE415, "scale": 0.02},
+        "interval": general_interval,
+        "last_update": None,
+        "topic_type": "number",
+        "config": {
+            "name": "Grid UF Time 1",
+            "icon": "mdi:timer",
+            "unit_of_measurement": "s",
+            "min": 0,
+            "max": 300,
+            "step": 0.02,
+            "entity_category": "config",
+            "command_topic": "grid/uf_time_1",
+        },
+    },
+    # 0xE416  GridUFResumLevel1
+    "grid/uf_resum_level_1": {
+        "value": modbus.read_register_value,
+        "args": {"register": 0xE416, "scale": 0.01},
+        "interval": general_interval,
+        "last_update": None,
+        "topic_type": "number",
+        "config": {
+            "name": "Grid UF Resume Level 1",
+            "icon": "mdi:alert-circle",
+            "unit_of_measurement": "Hz",
+            "device_class": "frequency",
+            "min": 0,
+            "max": 100,
+            "step": 0.01,
+            "entity_category": "config",
+            "command_topic": "grid/uf_resum_level_1",
+        },
+    },
+    # 0xE417  GridUFResumTime1
+    "grid/uf_resum_time_1": {
+        "value": modbus.read_register_value,
+        "args": {"register": 0xE417, "scale": 0.02},
+        "interval": general_interval,
+        "last_update": None,
+        "topic_type": "number",
+        "config": {
+            "name": "Grid UF Resume Time 1",
+            "icon": "mdi:timer",
+            "unit_of_measurement": "s",
+            "min": 0,
+            "max": 300,
+            "step": 0.02,
+            "entity_category": "config",
+            "command_topic": "grid/uf_resum_time_1",
+        },
+    },
+    # 0xE418  GridUFLevel2
+    "grid/uf_level_2": {
+        "value": modbus.read_register_value,
+        "args": {"register": 0xE418, "scale": 0.01},
+        "interval": general_interval,
+        "last_update": None,
+        "topic_type": "number",
+        "config": {
+            "name": "Grid UF Level 2",
+            "icon": "mdi:alert-circle",
+            "unit_of_measurement": "Hz",
+            "device_class": "frequency",
+            "min": 0,
+            "max": 100,
+            "step": 0.01,
+            "entity_category": "config",
+            "command_topic": "grid/uf_level_2",
+        },
+    },
+    # 0xE419  GridUFTime2
+    "grid/uf_time_2": {
+        "value": modbus.read_register_value,
+        "args": {"register": 0xE419, "scale": 0.02},
+        "interval": general_interval,
+        "last_update": None,
+        "topic_type": "number",
+        "config": {
+            "name": "Grid UF Time 2",
+            "icon": "mdi:timer",
+            "unit_of_measurement": "s",
+            "min": 0,
+            "max": 300,
+            "step": 0.02,
+            "entity_category": "config",
+            "command_topic": "grid/uf_time_2",
+        },
+    },
+    # 0xE41A  GridUFResumLevel2
+    "grid/uf_resum_level_2": {
+        "value": modbus.read_register_value,
+        "args": {"register": 0xE41A, "scale": 0.01},
+        "interval": general_interval,
+        "last_update": None,
+        "topic_type": "number",
+        "config": {
+            "name": "Grid UF Resume Level 2",
+            "icon": "mdi:alert-circle",
+            "unit_of_measurement": "Hz",
+            "device_class": "frequency",
+            "min": 0,
+            "max": 100,
+            "step": 0.01,
+            "entity_category": "config",
+            "command_topic": "grid/uf_resum_level_2",
+        },
+    },
+    # 0xE41B  GridUFResumTime2
+    "grid/uf_resum_time_2": {
+        "value": modbus.read_register_value,
+        "args": {"register": 0xE41B, "scale": 0.02},
+        "interval": general_interval,
+        "last_update": None,
+        "topic_type": "number",
+        "config": {
+            "name": "Grid UF Resume Time 2",
+            "icon": "mdi:timer",
+            "unit_of_measurement": "s",
+            "min": 0,
+            "max": 300,
+            "step": 0.02,
+            "entity_category": "config",
+            "command_topic": "grid/uf_resum_time_2",
+        },
+    },
+    # 0xE41C  GridOFLevel1
+    "grid/of_level_1": {
+        "value": modbus.read_register_value,
+        "args": {"register": 0xE41C, "scale": 0.01},
+        "interval": general_interval,
+        "last_update": None,
+        "topic_type": "number",
+        "config": {
+            "name": "Grid OF Level 1",
+            "icon": "mdi:alert-circle",
+            "unit_of_measurement": "Hz",
+            "device_class": "frequency",
+            "min": 0,
+            "max": 100,
+            "step": 0.01,
+            "entity_category": "config",
+            "command_topic": "grid/of_level_1",
+        },
+    },
+    # 0xE41D  GridOFTime1
+    "grid/of_time_1": {
+        "value": modbus.read_register_value,
+        "args": {"register": 0xE41D, "scale": 0.02},
+        "interval": general_interval,
+        "last_update": None,
+        "topic_type": "number",
+        "config": {
+            "name": "Grid OF Time 1",
+            "icon": "mdi:timer",
+            "unit_of_measurement": "s",
+            "min": 0,
+            "max": 300,
+            "step": 0.02,
+            "entity_category": "config",
+            "command_topic": "grid/of_time_1",
+        },
+    },
+    # 0xE41E  GridOFResumLevel1
+    "grid/of_resum_level_1": {
+        "value": modbus.read_register_value,
+        "args": {"register": 0xE41E, "scale": 0.01},
+        "interval": general_interval,
+        "last_update": None,
+        "topic_type": "number",
+        "config": {
+            "name": "Grid OF Resume Level 1",
+            "icon": "mdi:alert-circle",
+            "unit_of_measurement": "Hz",
+            "device_class": "frequency",
+            "min": 0,
+            "max": 100,
+            "step": 0.01,
+            "entity_category": "config",
+            "command_topic": "grid/of_resum_level_1",
+        },
+    },
+    # 0xE41F  GridOFResumTime1
+    "grid/of_resum_time_1": {
+        "value": modbus.read_register_value,
+        "args": {"register": 0xE41F, "scale": 0.02},
+        "interval": general_interval,
+        "last_update": None,
+        "topic_type": "number",
+        "config": {
+            "name": "Grid OF Resume Time 1",
+            "icon": "mdi:timer",
+            "unit_of_measurement": "s",
+            "min": 0,
+            "max": 300,
+            "step": 0.02,
+            "entity_category": "config",
+            "command_topic": "grid/of_resum_time_1",
+        },
+    },
+    # 0xE420  GridOFLevel2
+    "grid/of_level_2": {
+        "value": modbus.read_register_value,
+        "args": {"register": 0xE420, "scale": 0.01},
+        "interval": general_interval,
+        "last_update": None,
+        "topic_type": "number",
+        "config": {
+            "name": "Grid OF Level 2",
+            "icon": "mdi:alert-circle",
+            "unit_of_measurement": "Hz",
+            "device_class": "frequency",
+            "min": 0,
+            "max": 100,
+            "step": 0.01,
+            "entity_category": "config",
+            "command_topic": "grid/of_level_2",
+        },
+    },
+    # 0xE421  GridOFTime2
+    "grid/of_time_2": {
+        "value": modbus.read_register_value,
+        "args": {"register": 0xE421, "scale": 0.02},
+        "interval": general_interval,
+        "last_update": None,
+        "topic_type": "number",
+        "config": {
+            "name": "Grid OF Time 2",
+            "icon": "mdi:timer",
+            "unit_of_measurement": "s",
+            "min": 0,
+            "max": 300,
+            "step": 0.02,
+            "entity_category": "config",
+            "command_topic": "grid/of_time_2",
+        },
+    },
+    # 0xE422  GridOFResumLevel2
+    "grid/of_resum_level_2": {
+        "value": modbus.read_register_value,
+        "args": {"register": 0xE422, "scale": 0.01},
+        "interval": general_interval,
+        "last_update": None,
+        "topic_type": "number",
+        "config": {
+            "name": "Grid OF Resume Level 2",
+            "icon": "mdi:alert-circle",
+            "unit_of_measurement": "Hz",
+            "device_class": "frequency",
+            "min": 0,
+            "max": 100,
+            "step": 0.01,
+            "entity_category": "config",
+            "command_topic": "grid/of_resum_level_2",
+        },
+    },
+    # 0xE423  GridOFResumTime2
+    "grid/of_resum_time_2": {
+        "value": modbus.read_register_value,
+        "args": {"register": 0xE423, "scale": 0.02},
+        "interval": general_interval,
+        "last_update": None,
+        "topic_type": "number",
+        "config": {
+            "name": "Grid OF Resume Time 2",
+            "icon": "mdi:timer",
+            "unit_of_measurement": "s",
+            "min": 0,
+            "max": 300,
+            "step": 0.02,
+            "entity_category": "config",
+            "command_topic": "grid/of_resum_time_2",
+        },
+    },
+    # 0xE424  ReConnectGridTime
+    "grid/reconnect_time": {
+        "value": modbus.read_register_value,
+        "args": {"register": 0xE424, "integer": True},
+        "interval": general_interval,
+        "last_update": None,
+        "topic_type": "number",
+        "config": {
+            "name": "Grid Reconnect Time",
+            "icon": "mdi:timer",
+            "unit_of_measurement": "s",
+            "min": 0,
+            "max": 600,
+            "step": 1,
+            "entity_category": "config",
+            "command_topic": "grid/reconnect_time",
+        },
+    },
+    # 0xE425  IsoCheckEn
+    "grid/iso_check_enabled": {
+        "value": modbus.read_enabled_register,
+        "args": {"register": 0xE425},
+        "interval": general_interval,
+        "last_update": None,
+        "topic_type": "switch",
+        "config": {
+            "name": "ISO Check Enabled",
+            "icon": "mdi:shield-check",
+            "entity_category": "config",
+            "state_off": "Disabled",
+            "state_on": "Enabled",
+            "payload_off": "Disabled",
+            "payload_on": "Enabled",
+            "command_topic": "grid/iso_check_enabled",
+        },
+    },
+    # 0xE426  IsoProtectPoint
+    "grid/iso_protect_point": {
+        "value": modbus.read_register_value,
+        "args": {"register": 0xE426, "scale": 0.1},
+        "interval": general_interval,
+        "last_update": None,
+        "topic_type": "number",
+        "config": {
+            "name": "ISO Protect Point",
+            "icon": "mdi:shield-alert",
+            "min": 0,
+            "max": 65535,
+            "step": 0.1,
+            "entity_category": "config",
+            "command_topic": "grid/iso_protect_point",
+        },
+    },
+    # 0xE427  GridFuncEnable
+    "grid/grid_func_enabled": {
+        "value": modbus.read_enabled_register,
+        "args": {"register": 0xE427},
+        "interval": general_interval,
+        "last_update": None,
+        "topic_type": "switch",
+        "config": {
+            "name": "Grid Function Enabled",
+            "icon": "mdi:transmission-tower",
+            "entity_category": "config",
+            "state_off": "Disabled",
+            "state_on": "Enabled",
+            "payload_off": "Disabled",
+            "payload_on": "Enabled",
+            "command_topic": "grid/grid_func_enabled",
+        },
+    },
+    # 0xE428  GridStandUserMode
+    "grid/grid_stand_user_mode": {
+        "value": modbus.read_register_value,
+        "args": {"register": 0xE428, "integer": True},
+        "interval": general_interval,
+        "last_update": None,
+        "topic_type": "number",
+        "config": {
+            "name": "Grid Stand User Mode",
+            "icon": "mdi:transmission-tower",
+            "entity_category": "config",
+            "command_topic": "grid/grid_stand_user_mode",
+        },
+    },
+    # 0xE42B  ExCtRatio
+    "grid/ex_ct_ratio": {
+        "value": modbus.read_register_value,
+        "args": {"register": 0xE42B, "scale": 0.01},
+        "interval": general_interval,
+        "last_update": None,
+        "topic_type": "number",
+        "config": {
+            "name": "External CT Ratio",
+            "icon": "mdi:current-ac",
+            "min": 0,
+            "max": 100,
+            "step": 0.01,
+            "entity_category": "config",
+            "command_topic": "grid/ex_ct_ratio",
+        },
+    },
+    # 0xE42C  ZeroExportPower
+    "grid/zero_export_power": {
+        "value": modbus.read_register_value,
+        "args": {"register": 0xE42C, "signed": True, "integer": True},
+        "interval": general_interval,
+        "last_update": None,
+        "topic_type": "number",
+        "config": {
+            "name": "Zero Export Power",
+            "icon": "mdi:flash",
+            "unit_of_measurement": "W",
+            "device_class": "power",
+            "min": -12000,
+            "max": 12000,
+            "step": 1,
+            "entity_category": "config",
+            "command_topic": "grid/zero_export_power",
+        },
+    },
+    # 0xE42D  ReConnPowerRamp
+    "grid/recon_power_ramp": {
+        "value": modbus.read_register_value,
+        "args": {"register": 0xE42D, "integer": True},
+        "interval": general_interval,
+        "last_update": None,
+        "topic_type": "number",
+        "config": {
+            "name": "Reconnect Power Ramp",
+            "icon": "mdi:flash",
+            "unit_of_measurement": "W/s",
+            "min": 0,
+            "max": 12000,
+            "step": 1,
+            "entity_category": "config",
+            "command_topic": "grid/recon_power_ramp",
+        },
+    },
+    # 0xE42E  WattPFCurveEnable
+    "grid/watt_pf_curve_enabled": {
+        "value": modbus.read_enabled_register,
+        "args": {"register": 0xE42E},
+        "interval": general_interval,
+        "last_update": None,
+        "topic_type": "switch",
+        "config": {
+            "name": "Watt PF Curve Enabled",
+            "icon": "mdi:sine-wave",
+            "entity_category": "config",
+            "state_off": "Disabled",
+            "state_on": "Enabled",
+            "payload_off": "Disabled",
+            "payload_on": "Enabled",
+            "command_topic": "grid/watt_pf_curve_enabled",
+        },
+    },
+    # 0xE42F  HLVRTEnable
+    "grid/hlvrt_enabled": {
+        "value": modbus.read_enabled_register,
+        "args": {"register": 0xE42F},
+        "interval": general_interval,
+        "last_update": None,
+        "topic_type": "switch",
+        "config": {
+            "name": "HLVRT Enabled",
+            "icon": "mdi:alert-circle",
+            "entity_category": "config",
+            "state_off": "Disabled",
+            "state_on": "Enabled",
+            "payload_off": "Disabled",
+            "payload_on": "Enabled",
+            "command_topic": "grid/hlvrt_enabled",
+        },
+    },
+    # 0xE430  Cei021AutoTestStart
+    "grid/cei021_auto_test_start": {
+        "value": modbus.read_enabled_register,
+        "args": {"register": 0xE430},
+        "interval": general_interval,
+        "last_update": None,
+        "topic_type": "switch",
+        "config": {
+            "name": "CEI 0.21 Auto Test Start",
+            "icon": "mdi:test-tube",
+            "entity_category": "config",
+            "state_off": "Disabled",
+            "state_on": "Enabled",
+            "payload_off": "Disabled",
+            "payload_on": "Enabled",
+            "command_topic": "grid/cei021_auto_test_start",
+        },
+    },
+    # 0xE431  AfciEnable
+    "grid/afci_enabled": {
+        "value": modbus.read_enabled_register,
+        "args": {"register": 0xE431},
+        "interval": general_interval,
+        "last_update": None,
+        "topic_type": "switch",
+        "config": {
+            "name": "AFCI Enabled",
+            "icon": "mdi:shield-check",
+            "entity_category": "config",
+            "state_off": "Disabled",
+            "state_on": "Enabled",
+            "payload_off": "Disabled",
+            "payload_on": "Enabled",
+            "command_topic": "grid/afci_enabled",
+        },
+    },
+    # 0xE432  NormalConnDlyTsec
+    "grid/normal_conn_dly_tsec": {
+        "value": modbus.read_register_value,
+        "args": {"register": 0xE432, "integer": True},
+        "interval": general_interval,
+        "last_update": None,
+        "topic_type": "number",
+        "config": {
+            "name": "Normal Connection Delay Time",
+            "icon": "mdi:timer",
+            "unit_of_measurement": "s",
+            "min": 0,
+            "max": 1000,
+            "step": 1,
+            "entity_category": "config",
+            "command_topic": "grid/normal_conn_dly_tsec",
+        },
+    },
+    # 0xE433  NormalConnPwrRampTsec
+    "grid/normal_conn_pwr_ramp_tsec": {
+        "value": modbus.read_register_value,
+        "args": {"register": 0xE433, "integer": True},
+        "interval": general_interval,
+        "last_update": None,
+        "topic_type": "number",
+        "config": {
+            "name": "Normal Connection Power Ramp Time",
+            "icon": "mdi:timer",
+            "unit_of_measurement": "s",
+            "min": 0,
+            "max": 1000,
+            "step": 1,
+            "entity_category": "config",
+            "command_topic": "grid/normal_conn_pwr_ramp_tsec",
+        },
+    },
+    # 0xE434  ConnVoltLow
+    "grid/conn_volt_low": {
+        "value": modbus.read_register_value,
+        "args": {"register": 0xE434, "scale": 0.1},
+        "interval": general_interval,
+        "last_update": None,
+        "topic_type": "number",
+        "config": {
+            "name": "Connection Voltage Low",
+            "icon": "mdi:flash-outline",
+            "unit_of_measurement": "V",
+            "device_class": "voltage",
+            "min": 0,
+            "max": 320,
+            "step": 0.1,
+            "entity_category": "config",
+            "command_topic": "grid/conn_volt_low",
+        },
+    },
+    # 0xE435  ConnVoltHigh
+    "grid/conn_volt_high": {
+        "value": modbus.read_register_value,
+        "args": {"register": 0xE435, "scale": 0.1},
+        "interval": general_interval,
+        "last_update": None,
+        "topic_type": "number",
+        "config": {
+            "name": "Connection Voltage High",
+            "icon": "mdi:flash-outline",
+            "unit_of_measurement": "V",
+            "device_class": "voltage",
+            "min": 0,
+            "max": 320,
+            "step": 0.1,
+            "entity_category": "config",
+            "command_topic": "grid/conn_volt_high",
+        },
+    },
+    # 0xE436  ConnFreqLow
+    "grid/conn_freq_low": {
+        "value": modbus.read_register_value,
+        "args": {"register": 0xE436, "scale": 0.01},
+        "interval": general_interval,
+        "last_update": None,
+        "topic_type": "number",
+        "config": {
+            "name": "Connection Frequency Low",
+            "icon": "mdi:pulse",
+            "unit_of_measurement": "Hz",
+            "device_class": "frequency",
+            "min": 0,
+            "max": 100,
+            "step": 0.01,
+            "entity_category": "config",
+            "command_topic": "grid/conn_freq_low",
+        },
+    },
+    # 0xE437  ConnFreqHigh
+    "grid/conn_freq_high": {
+        "value": modbus.read_register_value,
+        "args": {"register": 0xE437, "scale": 0.01},
+        "interval": general_interval,
+        "last_update": None,
+        "topic_type": "number",
+        "config": {
+            "name": "Connection Frequency High",
+            "icon": "mdi:pulse",
+            "unit_of_measurement": "Hz",
+            "device_class": "frequency",
+            "min": 0,
+            "max": 100,
+            "step": 0.01,
+            "entity_category": "config",
+            "command_topic": "grid/conn_freq_high",
+        },
+    },
+    # 0xE43A  GridFuncEnable1
+    "grid/grid_func_enabled_1": {
+        "value": modbus.read_enabled_register,
+        "args": {"register": 0xE43A},
+        "interval": general_interval,
+        "last_update": None,
+        "topic_type": "switch",
+        "config": {
+            "name": "Grid Function Enabled 1",
+            "icon": "mdi:transmission-tower",
+            "entity_category": "config",
+            "state_off": "Disabled",
+            "state_on": "Enabled",
+            "payload_off": "Disabled",
+            "payload_on": "Enabled",
+            "command_topic": "grid/grid_func_enabled_1",
+        },
+    },
+    # 0xE43B  DRMS_Enable
+    "grid/drms_enabled": {
+        "value": modbus.read_enabled_register,
+        "args": {"register": 0xE43B},
+        "interval": general_interval,
+        "last_update": None,
+        "topic_type": "switch",
+        "config": {
+            "name": "DRMS Enabled",
+            "icon": "mdi:transmission-tower",
+            "entity_category": "config",
+            "state_off": "Disabled",
+            "state_on": "Enabled",
+            "payload_off": "Disabled",
+            "payload_on": "Enabled",
+            "command_topic": "grid/drms_enabled",
+        },
+    },
+    # 0xE43C  GridUVLevel3
+    "grid/uv_level_3": {
+        "value": modbus.read_register_value,
+        "args": {"register": 0xE43C, "scale": 0.1},
+        "interval": general_interval,
+        "last_update": None,
+        "topic_type": "number",
+        "config": {
+            "name": "Grid UV Level 3",
+            "icon": "mdi:alert-circle",
+            "unit_of_measurement": "V",
+            "device_class": "voltage",
+            "min": 0,
+            "max": 320,
+            "step": 0.1,
+            "entity_category": "config",
+            "command_topic": "grid/uv_level_3",
+        },
+    },
+    # 0xE43D  GridUVTime3
+    "grid/uv_time_3": {
+        "value": modbus.read_register_value,
+        "args": {"register": 0xE43D, "scale": 0.02},
+        "interval": general_interval,
+        "last_update": None,
+        "topic_type": "number",
+        "config": {
+            "name": "Grid UV Time 3",
+            "icon": "mdi:timer",
+            "unit_of_measurement": "s",
+            "min": 0,
+            "max": 300,
+            "step": 0.02,
+            "entity_category": "config",
+            "command_topic": "grid/uv_time_3",
+        },
+    },
+    # 0xE43E  SmartMeterEn
+    "grid/smart_meter_enabled": {
+        "value": modbus.read_enabled_register,
+        "args": {"register": 0xE43E},
+        "interval": general_interval,
+        "last_update": None,
+        "topic_type": "switch",
+        "config": {
+            "name": "Smart Meter Enabled",
+            "icon": "mdi:meter-gas",
+            "entity_category": "config",
+            "state_off": "Disabled",
+            "state_on": "Enabled",
+            "payload_off": "Disabled",
+            "payload_on": "Enabled",
+            "command_topic": "grid/smart_meter_enabled",
+        },
+    },
+    # 0xE440  SmartMeter1Addr
+    "grid/smart_meter_1_addr": {
+        "value": modbus.read_register_value,
+        "args": {"register": 0xE440, "integer": True},
+        "interval": general_interval,
+        "last_update": None,
+        "topic_type": "number",
+        "config": {
+            "name": "Smart Meter 1 Address",
+            "icon": "mdi:meter-gas",
+            "min": 1,
+            "max": 255,
+            "step": 1,
+            "entity_category": "config",
+            "command_topic": "grid/smart_meter_1_addr",
+        },
+    },
+    # 0xE441  SmartMeter2Addr
+    "grid/smart_meter_2_addr": {
+        "value": modbus.read_register_value,
+        "args": {"register": 0xE441, "integer": True},
+        "interval": general_interval,
+        "last_update": None,
+        "topic_type": "number",
+        "config": {
+            "name": "Smart Meter 2 Address",
+            "icon": "mdi:meter-gas",
+            "min": 1,
+            "max": 255,
+            "step": 1,
+            "entity_category": "config",
+            "command_topic": "grid/smart_meter_2_addr",
+        },
+    },
+    # 0xE442  GridAvgOvEn
+    "grid/avg_ov_enabled": {
+        "value": modbus.read_enabled_register,
+        "args": {"register": 0xE442},
+        "interval": general_interval,
+        "last_update": None,
+        "topic_type": "switch",
+        "config": {
+            "name": "Grid Average OV Enabled",
+            "icon": "mdi:alert-circle",
+            "entity_category": "config",
+            "state_off": "Disabled",
+            "state_on": "Enabled",
+            "payload_off": "Disabled",
+            "payload_on": "Enabled",
+            "command_topic": "grid/avg_ov_enabled",
+        },
+    },
+    # 0xE443  GridAvgOvTh
+    "grid/avg_ov_threshold": {
+        "value": modbus.read_register_value,
+        "args": {"register": 0xE443, "scale": 0.1},
+        "interval": general_interval,
+        "last_update": None,
+        "topic_type": "number",
+        "config": {
+            "name": "Grid Average OV Threshold",
+            "icon": "mdi:alert-circle",
+            "unit_of_measurement": "V",
+            "device_class": "voltage",
+            "min": 0,
+            "max": 300,
+            "step": 0.1,
+            "entity_category": "config",
+            "command_topic": "grid/avg_ov_threshold",
+        },
+    },
+    # 0xE444  GridAvgOvDelay
+    "grid/avg_ov_delay": {
+        "value": modbus.read_register_value,
+        "args": {"register": 0xE444, "integer": True},
+        "interval": general_interval,
+        "last_update": None,
+        "topic_type": "number",
+        "config": {
+            "name": "Grid Average OV Delay",
+            "icon": "mdi:timer",
+            "unit_of_measurement": "s",
+            "min": 1,
+            "max": 3600,
+            "step": 1,
+            "entity_category": "config",
+            "command_topic": "grid/avg_ov_delay",
+        },
+    },
+    # 0xE445  GridRocofEn
+    "grid/rocof_enabled": {
+        "value": modbus.read_enabled_register,
+        "args": {"register": 0xE445},
+        "interval": general_interval,
+        "last_update": None,
+        "topic_type": "switch",
+        "config": {
+            "name": "Grid RoCoF Enabled",
+            "icon": "mdi:alert-circle",
+            "entity_category": "config",
+            "state_off": "Disabled",
+            "state_on": "Enabled",
+            "payload_off": "Disabled",
+            "payload_on": "Enabled",
+            "command_topic": "grid/rocof_enabled",
+        },
+    },
+    # 0xE446  GridRocofTh
+    "grid/rocof_threshold": {
+        "value": modbus.read_register_value,
+        "args": {"register": 0xE446, "scale": 0.01},
+        "interval": general_interval,
+        "last_update": None,
+        "topic_type": "number",
+        "config": {
+            "name": "Grid RoCoF Threshold",
+            "icon": "mdi:alert-circle",
+            "unit_of_measurement": "Hz/s",
+            "min": 0,
+            "max": 10000,
+            "step": 0.01,
+            "entity_category": "config",
+            "command_topic": "grid/rocof_threshold",
+        },
+    },
+    # 0xE447  GridRocofDelay
+    "grid/rocof_delay": {
+        "value": modbus.read_register_value,
+        "args": {"register": 0xE447, "integer": True},
+        "interval": general_interval,
+        "last_update": None,
+        "topic_type": "number",
+        "config": {
+            "name": "Grid RoCoF Delay",
+            "icon": "mdi:timer",
+            "unit_of_measurement": "ms",
+            "min": 0,
+            "max": 60000,
+            "step": 1,
+            "entity_category": "config",
+            "command_topic": "grid/rocof_delay",
+        },
+    },
+    ############ Device Control #####################
+    # 0xDF06  UpgradeCmd
+    "inverter/upgrade_cmd": {
+        "value": 1,
+        "topic_type": "button",
+        "dangerous": True,
+        "config": {
+            "name": "Upgrade Device",
+            "icon": "mdi:update",
+            "command_topic": "inverter/upgrade_cmd",
+        },
+    },
     # 0xE42A  BattForGridPowerEn
     "inverter/battery_priority": {
         "value": modbus.read_lookup_register,
@@ -3018,7 +5544,7 @@ mqtt_config: dict[str, dict[str, any]] = {
             "icon": "mdi:chart-bar",
             "unit_of_measurement": "kWh",
             "device_class": "energy",
-            "state_class": "total_increasing",
+            "state_class": "total",
         },
     },
     ############ Statistics Configuration #####################
@@ -3033,7 +5559,7 @@ mqtt_config: dict[str, dict[str, any]] = {
             "icon": "mdi:chart-bar",
             "unit_of_measurement": "kWh",
             "device_class": "energy",
-            "state_class": "total_increasing",
+            "state_class": "total",
         },
     },
     # 0xF02D  BatChgAHToday
@@ -3046,7 +5572,7 @@ mqtt_config: dict[str, dict[str, any]] = {
             "name": "Daily Battery Charged",
             "icon": "mdi:chart-bar",
             "unit_of_measurement": "Ah",
-            "state_class": "total_increasing",
+            "state_class": "measurement",
         },
     },
     # 0xF02E  BatDischgAHToday
@@ -3059,7 +5585,7 @@ mqtt_config: dict[str, dict[str, any]] = {
             "name": "Daily Battery Discharged",
             "icon": "mdi:chart-bar",
             "unit_of_measurement": "Ah",
-            "state_class": "total_increasing",
+            "state_class": "measurement",
         },
     },
     # 0xF02F  GeneratEnergyToday
@@ -3073,7 +5599,7 @@ mqtt_config: dict[str, dict[str, any]] = {
             "icon": "mdi:chart-bar",
             "unit_of_measurement": "kWh",
             "device_class": "energy",
-            "state_class": "total_increasing",
+            "state_class": "total",
         },
     },
     # 0xF030  UsedEnergyToday
@@ -3087,7 +5613,7 @@ mqtt_config: dict[str, dict[str, any]] = {
             "icon": "mdi:chart-bar",
             "unit_of_measurement": "kWh",
             "device_class": "energy",
-            "state_class": "total_increasing",
+            "state_class": "total",
         },
     },
     # 0xF031  WorkDaysTotal
@@ -3184,7 +5710,7 @@ mqtt_config: dict[str, dict[str, any]] = {
             "name": "Daily Grid Battery Charging",
             "icon": "mdi:chart-bar",
             "unit_of_measurement": "Ah",
-            "state_class": "total_increasing",
+            "state_class": "measurement",
         },
     },
     # 0xF03D  LoadConsumLineTday
@@ -3198,7 +5724,7 @@ mqtt_config: dict[str, dict[str, any]] = {
             "icon": "mdi:chart-bar",
             "unit_of_measurement": "kWh",
             "device_class": "energy",
-            "state_class": "total_increasing",
+            "state_class": "total",
         },
     },
     # 0xF03E  InvWorkTimeToday
@@ -3312,7 +5838,7 @@ mqtt_config: dict[str, dict[str, any]] = {
             "icon": "mdi:chart-bar",
             "unit_of_measurement": "kWh",
             "device_class": "energy",
-            "state_class": "total_increasing",
+            "state_class": "total",
         },
     },
     ############ Battery kWh Statistics #####################
@@ -3328,7 +5854,7 @@ mqtt_config: dict[str, dict[str, any]] = {
             "icon": "mdi:chart-bar",
             "unit_of_measurement": "kWh",
             "device_class": "energy",
-            "state_class": "total_increasing",
+            "state_class": "total",
         },
     },
     # 0xF050  BatChgkWhTotal
@@ -3387,7 +5913,7 @@ mqtt_config: dict[str, dict[str, any]] = {
             "icon": "mdi:chart-bar",
             "unit_of_measurement": "kWh",
             "device_class": "energy",
-            "state_class": "total_increasing",
+            "state_class": "total",
         },
     },
     # 0xF057  GenChgkWhToday
@@ -3401,7 +5927,7 @@ mqtt_config: dict[str, dict[str, any]] = {
             "icon": "mdi:chart-bar",
             "unit_of_measurement": "kWh",
             "device_class": "energy",
-            "state_class": "total_increasing",
+            "state_class": "total",
         },
     },
     # 0xF058  GenLoadConsumTotal
@@ -3442,7 +5968,7 @@ mqtt_config: dict[str, dict[str, any]] = {
             "name": "Daily Generator Work Time",
             "icon": "mdi:timer",
             "unit_of_measurement": "h",
-            "state_class": "total_increasing",
+            "state_class": "measurement",
         },
     },
     # 0xF05D  GenWorkTimeTotal
@@ -3470,7 +5996,7 @@ mqtt_config: dict[str, dict[str, any]] = {
             "icon": "mdi:chart-bar",
             "unit_of_measurement": "kWh",
             "device_class": "energy",
-            "state_class": "total_increasing",
+            "state_class": "total",
         },
     },
     # 0xF060  HomdLoadConsumTotal
@@ -4113,7 +6639,7 @@ mqtt_config: dict[str, dict[str, any]] = {
             "icon": "mdi:chart-bar",
             "unit_of_measurement": "kWh",
             "device_class": "energy",
-            "state_class": "total_increasing",
+            "state_class": "total",
         },
     },
     # 0xF001  PV Production 2 Days Ago
@@ -4127,7 +6653,7 @@ mqtt_config: dict[str, dict[str, any]] = {
             "icon": "mdi:chart-bar",
             "unit_of_measurement": "kWh",
             "device_class": "energy",
-            "state_class": "total_increasing",
+            "state_class": "total",
         },
     },
     # 0xF002  PV Production 3 Days Ago
@@ -4141,7 +6667,7 @@ mqtt_config: dict[str, dict[str, any]] = {
             "icon": "mdi:chart-bar",
             "unit_of_measurement": "kWh",
             "device_class": "energy",
-            "state_class": "total_increasing",
+            "state_class": "total",
         },
     },
     # 0xF003  PV Production 4 Days Ago
@@ -4155,7 +6681,7 @@ mqtt_config: dict[str, dict[str, any]] = {
             "icon": "mdi:chart-bar",
             "unit_of_measurement": "kWh",
             "device_class": "energy",
-            "state_class": "total_increasing",
+            "state_class": "total",
         },
     },
     # 0xF004  PV Production 5 Days Ago
@@ -4169,7 +6695,7 @@ mqtt_config: dict[str, dict[str, any]] = {
             "icon": "mdi:chart-bar",
             "unit_of_measurement": "kWh",
             "device_class": "energy",
-            "state_class": "total_increasing",
+            "state_class": "total",
         },
     },
     # 0xF005  PV Production 6 Days Ago
@@ -4183,7 +6709,7 @@ mqtt_config: dict[str, dict[str, any]] = {
             "icon": "mdi:chart-bar",
             "unit_of_measurement": "kWh",
             "device_class": "energy",
-            "state_class": "total_increasing",
+            "state_class": "total",
         },
     },
     # 0xF006  PV Production 7 Days Ago
@@ -4197,7 +6723,7 @@ mqtt_config: dict[str, dict[str, any]] = {
             "icon": "mdi:chart-bar",
             "unit_of_measurement": "kWh",
             "device_class": "energy",
-            "state_class": "total_increasing",
+            "state_class": "total",
         },
     },
     # 0xF007  Battery Charged Yesterday
@@ -4210,7 +6736,7 @@ mqtt_config: dict[str, dict[str, any]] = {
             "name": "Battery Charged — Yesterday",
             "icon": "mdi:chart-bar",
             "unit_of_measurement": "Ah",
-            "state_class": "total_increasing",
+            "state_class": "measurement",
         },
     },
     # 0xF008  Battery Charged 2 Days Ago
@@ -4223,7 +6749,7 @@ mqtt_config: dict[str, dict[str, any]] = {
             "name": "Battery Charged — 2 Days Ago",
             "icon": "mdi:chart-bar",
             "unit_of_measurement": "Ah",
-            "state_class": "total_increasing",
+            "state_class": "measurement",
         },
     },
     # 0xF009  Battery Charged 3 Days Ago
@@ -4236,7 +6762,7 @@ mqtt_config: dict[str, dict[str, any]] = {
             "name": "Battery Charged — 3 Days Ago",
             "icon": "mdi:chart-bar",
             "unit_of_measurement": "Ah",
-            "state_class": "total_increasing",
+            "state_class": "measurement",
         },
     },
     # 0xF00A  Battery Charged 4 Days Ago
@@ -4249,7 +6775,7 @@ mqtt_config: dict[str, dict[str, any]] = {
             "name": "Battery Charged — 4 Days Ago",
             "icon": "mdi:chart-bar",
             "unit_of_measurement": "Ah",
-            "state_class": "total_increasing",
+            "state_class": "measurement",
         },
     },
     # 0xF00B  Battery Charged 5 Days Ago
@@ -4262,7 +6788,7 @@ mqtt_config: dict[str, dict[str, any]] = {
             "name": "Battery Charged — 5 Days Ago",
             "icon": "mdi:chart-bar",
             "unit_of_measurement": "Ah",
-            "state_class": "total_increasing",
+            "state_class": "measurement",
         },
     },
     # 0xF00C  Battery Charged 6 Days Ago
@@ -4275,7 +6801,7 @@ mqtt_config: dict[str, dict[str, any]] = {
             "name": "Battery Charged — 6 Days Ago",
             "icon": "mdi:chart-bar",
             "unit_of_measurement": "Ah",
-            "state_class": "total_increasing",
+            "state_class": "measurement",
         },
     },
     # 0xF00D  Battery Charged 7 Days Ago
@@ -4288,7 +6814,7 @@ mqtt_config: dict[str, dict[str, any]] = {
             "name": "Battery Charged — 7 Days Ago",
             "icon": "mdi:chart-bar",
             "unit_of_measurement": "Ah",
-            "state_class": "total_increasing",
+            "state_class": "measurement",
         },
     },
     # 0xF00E  Battery Discharged Yesterday
@@ -4301,7 +6827,7 @@ mqtt_config: dict[str, dict[str, any]] = {
             "name": "Battery Discharged — Yesterday",
             "icon": "mdi:chart-bar",
             "unit_of_measurement": "Ah",
-            "state_class": "total_increasing",
+            "state_class": "measurement",
         },
     },
     # 0xF00F  Battery Discharged 2 Days Ago
@@ -4314,7 +6840,7 @@ mqtt_config: dict[str, dict[str, any]] = {
             "name": "Battery Discharged — 2 Days Ago",
             "icon": "mdi:chart-bar",
             "unit_of_measurement": "Ah",
-            "state_class": "total_increasing",
+            "state_class": "measurement",
         },
     },
     # 0xF010  Battery Discharged 3 Days Ago
@@ -4327,7 +6853,7 @@ mqtt_config: dict[str, dict[str, any]] = {
             "name": "Battery Discharged — 3 Days Ago",
             "icon": "mdi:chart-bar",
             "unit_of_measurement": "Ah",
-            "state_class": "total_increasing",
+            "state_class": "measurement",
         },
     },
     # 0xF011  Battery Discharged 4 Days Ago
@@ -4340,7 +6866,7 @@ mqtt_config: dict[str, dict[str, any]] = {
             "name": "Battery Discharged — 4 Days Ago",
             "icon": "mdi:chart-bar",
             "unit_of_measurement": "Ah",
-            "state_class": "total_increasing",
+            "state_class": "measurement",
         },
     },
     # 0xF012  Battery Discharged 5 Days Ago
@@ -4353,7 +6879,7 @@ mqtt_config: dict[str, dict[str, any]] = {
             "name": "Battery Discharged — 5 Days Ago",
             "icon": "mdi:chart-bar",
             "unit_of_measurement": "Ah",
-            "state_class": "total_increasing",
+            "state_class": "measurement",
         },
     },
     # 0xF013  Battery Discharged 6 Days Ago
@@ -4366,7 +6892,7 @@ mqtt_config: dict[str, dict[str, any]] = {
             "name": "Battery Discharged — 6 Days Ago",
             "icon": "mdi:chart-bar",
             "unit_of_measurement": "Ah",
-            "state_class": "total_increasing",
+            "state_class": "measurement",
         },
     },
     # 0xF014  Battery Discharged 7 Days Ago
@@ -4379,7 +6905,7 @@ mqtt_config: dict[str, dict[str, any]] = {
             "name": "Battery Discharged — 7 Days Ago",
             "icon": "mdi:chart-bar",
             "unit_of_measurement": "Ah",
-            "state_class": "total_increasing",
+            "state_class": "measurement",
         },
     },
     # 0xF015  Grid Battery Charged Yesterday
@@ -4392,7 +6918,7 @@ mqtt_config: dict[str, dict[str, any]] = {
             "name": "Grid Battery Charged — Yesterday",
             "icon": "mdi:chart-bar",
             "unit_of_measurement": "Ah",
-            "state_class": "total_increasing",
+            "state_class": "measurement",
         },
     },
     # 0xF016  Grid Battery Charged 2 Days Ago
@@ -4405,7 +6931,7 @@ mqtt_config: dict[str, dict[str, any]] = {
             "name": "Grid Battery Charged — 2 Days Ago",
             "icon": "mdi:chart-bar",
             "unit_of_measurement": "Ah",
-            "state_class": "total_increasing",
+            "state_class": "measurement",
         },
     },
     # 0xF017  Grid Battery Charged 3 Days Ago
@@ -4418,7 +6944,7 @@ mqtt_config: dict[str, dict[str, any]] = {
             "name": "Grid Battery Charged — 3 Days Ago",
             "icon": "mdi:chart-bar",
             "unit_of_measurement": "Ah",
-            "state_class": "total_increasing",
+            "state_class": "measurement",
         },
     },
     # 0xF018  Grid Battery Charged 4 Days Ago
@@ -4431,7 +6957,7 @@ mqtt_config: dict[str, dict[str, any]] = {
             "name": "Grid Battery Charged — 4 Days Ago",
             "icon": "mdi:chart-bar",
             "unit_of_measurement": "Ah",
-            "state_class": "total_increasing",
+            "state_class": "measurement",
         },
     },
     # 0xF019  Grid Battery Charged 5 Days Ago
@@ -4444,7 +6970,7 @@ mqtt_config: dict[str, dict[str, any]] = {
             "name": "Grid Battery Charged — 5 Days Ago",
             "icon": "mdi:chart-bar",
             "unit_of_measurement": "Ah",
-            "state_class": "total_increasing",
+            "state_class": "measurement",
         },
     },
     # 0xF01A  Grid Battery Charged 6 Days Ago
@@ -4457,7 +6983,7 @@ mqtt_config: dict[str, dict[str, any]] = {
             "name": "Grid Battery Charged — 6 Days Ago",
             "icon": "mdi:chart-bar",
             "unit_of_measurement": "Ah",
-            "state_class": "total_increasing",
+            "state_class": "measurement",
         },
     },
     # 0xF01B  Grid Battery Charged 7 Days Ago
@@ -4470,7 +6996,7 @@ mqtt_config: dict[str, dict[str, any]] = {
             "name": "Grid Battery Charged — 7 Days Ago",
             "icon": "mdi:chart-bar",
             "unit_of_measurement": "Ah",
-            "state_class": "total_increasing",
+            "state_class": "measurement",
         },
     },
     # 0xF01C  Load Consumed Yesterday
@@ -4484,7 +7010,7 @@ mqtt_config: dict[str, dict[str, any]] = {
             "icon": "mdi:chart-bar",
             "unit_of_measurement": "kWh",
             "device_class": "energy",
-            "state_class": "total_increasing",
+            "state_class": "total",
         },
     },
     # 0xF01D  Load Consumed 2 Days Ago
@@ -4498,7 +7024,7 @@ mqtt_config: dict[str, dict[str, any]] = {
             "icon": "mdi:chart-bar",
             "unit_of_measurement": "kWh",
             "device_class": "energy",
-            "state_class": "total_increasing",
+            "state_class": "total",
         },
     },
     # 0xF01E  Load Consumed 3 Days Ago
@@ -4512,7 +7038,7 @@ mqtt_config: dict[str, dict[str, any]] = {
             "icon": "mdi:chart-bar",
             "unit_of_measurement": "kWh",
             "device_class": "energy",
-            "state_class": "total_increasing",
+            "state_class": "total",
         },
     },
     # 0xF01F  Load Consumed 4 Days Ago
@@ -4526,7 +7052,7 @@ mqtt_config: dict[str, dict[str, any]] = {
             "icon": "mdi:chart-bar",
             "unit_of_measurement": "kWh",
             "device_class": "energy",
-            "state_class": "total_increasing",
+            "state_class": "total",
         },
     },
     # 0xF020  Load Consumed 5 Days Ago
@@ -4540,7 +7066,7 @@ mqtt_config: dict[str, dict[str, any]] = {
             "icon": "mdi:chart-bar",
             "unit_of_measurement": "kWh",
             "device_class": "energy",
-            "state_class": "total_increasing",
+            "state_class": "total",
         },
     },
     # 0xF021  Load Consumed 6 Days Ago
@@ -4554,7 +7080,7 @@ mqtt_config: dict[str, dict[str, any]] = {
             "icon": "mdi:chart-bar",
             "unit_of_measurement": "kWh",
             "device_class": "energy",
-            "state_class": "total_increasing",
+            "state_class": "total",
         },
     },
     # 0xF022  Load Consumed 7 Days Ago
@@ -4568,7 +7094,7 @@ mqtt_config: dict[str, dict[str, any]] = {
             "icon": "mdi:chart-bar",
             "unit_of_measurement": "kWh",
             "device_class": "energy",
-            "state_class": "total_increasing",
+            "state_class": "total",
         },
     },
     # 0xF023  Load Consumed From Grid Yesterday
@@ -4582,7 +7108,7 @@ mqtt_config: dict[str, dict[str, any]] = {
             "icon": "mdi:chart-bar",
             "unit_of_measurement": "kWh",
             "device_class": "energy",
-            "state_class": "total_increasing",
+            "state_class": "total",
         },
     },
     # 0xF024  Load Consumed From Grid 2 Days Ago
@@ -4596,7 +7122,7 @@ mqtt_config: dict[str, dict[str, any]] = {
             "icon": "mdi:chart-bar",
             "unit_of_measurement": "kWh",
             "device_class": "energy",
-            "state_class": "total_increasing",
+            "state_class": "total",
         },
     },
     # 0xF025  Load Consumed From Grid 3 Days Ago
@@ -4610,7 +7136,7 @@ mqtt_config: dict[str, dict[str, any]] = {
             "icon": "mdi:chart-bar",
             "unit_of_measurement": "kWh",
             "device_class": "energy",
-            "state_class": "total_increasing",
+            "state_class": "total",
         },
     },
     # 0xF026  Load Consumed From Grid 4 Days Ago
@@ -4624,7 +7150,7 @@ mqtt_config: dict[str, dict[str, any]] = {
             "icon": "mdi:chart-bar",
             "unit_of_measurement": "kWh",
             "device_class": "energy",
-            "state_class": "total_increasing",
+            "state_class": "total",
         },
     },
     # 0xF027  Load Consumed From Grid 5 Days Ago
@@ -4638,7 +7164,7 @@ mqtt_config: dict[str, dict[str, any]] = {
             "icon": "mdi:chart-bar",
             "unit_of_measurement": "kWh",
             "device_class": "energy",
-            "state_class": "total_increasing",
+            "state_class": "total",
         },
     },
     # 0xF028  Load Consumed From Grid 6 Days Ago
@@ -4652,7 +7178,7 @@ mqtt_config: dict[str, dict[str, any]] = {
             "icon": "mdi:chart-bar",
             "unit_of_measurement": "kWh",
             "device_class": "energy",
-            "state_class": "total_increasing",
+            "state_class": "total",
         },
     },
     # 0xF029  Load Consumed From Grid 7 Days Ago
@@ -4666,7 +7192,7 @@ mqtt_config: dict[str, dict[str, any]] = {
             "icon": "mdi:chart-bar",
             "unit_of_measurement": "kWh",
             "device_class": "energy",
-            "state_class": "total_increasing",
+            "state_class": "total",
         },
     },
 }

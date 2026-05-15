@@ -1,0 +1,777 @@
+# Home Assistant Lovelace Dashboard for SRNE Solar Inverter
+#
+# REQUIRED HACS INTEGRATIONS:
+# - custom:power-flow-card-plus  https://github.com/flixlix/power-flow-card-plus
+#   (power flow diagram on Overview)
+# - custom:fold-entity-row       https://github.com/thomasloven/lovelace-fold-entity-row
+#   (collapsible sections in Settings view)
+#
+# Optional HACS:
+# - custom:button-card           https://github.com/custom-cards/button-card
+#   (enhanced button styling)
+#
+# MQTT Topic Prefix: srne-inv1
+# Entity ID format: sensor.srne_inv1_battery_soc, select.srne_inv1_hybrid_grid_mode, etc.
+
+views:
+  - title: Overview
+    path: overview
+    icon: mdi:home-battery
+    layout:
+      type: grid
+      columns: 2
+      max_cols: 2
+    cards:
+      # Battery State of Charge - Large Gauge
+      - type: gauge
+        entity: sensor.srne_inv1_battery_soc
+        min: 0
+        max: 100
+        segments:
+          - from: 0
+            color: "#ff4444"
+          - from: 20
+            color: "#ffaa44"
+          - from: 50
+            color: "#ffff44"
+          - from: 80
+            color: "#44ff44"
+        needle: true
+        title: Battery State of Charge
+
+      # Battery Status Summary
+      - type: entities
+        title: Battery Status
+        entities:
+          - entity: sensor.srne_inv1_battery_soc
+            name: State of Charge
+          - entity: sensor.srne_inv1_battery_voltage
+            name: Voltage
+          - entity: sensor.srne_inv1_battery_current
+            name: Current
+          - entity: sensor.srne_inv1_battery_temperature
+            name: Temperature
+          - entity: sensor.srne_inv1_charge_state
+            name: Charge State
+          - entity: sensor.srne_inv1_battery_power
+            name: Power
+
+      # Power Flow Diagram — requires custom:power-flow-card-plus from HACS
+      # Sign conventions: solar always positive; battery positive=charging negative=discharging;
+      # grid/ct positive=importing negative=exporting; load always positive
+      - type: custom:power-flow-card-plus
+        entities:
+          solar:
+            entity: sensor.srne_inv1_pv_total_power
+            display_zero_state: true
+          battery:
+            entity: sensor.srne_inv1_battery_power
+            state_of_charge: sensor.srne_inv1_battery_soc
+            state_of_charge_unit: "%"
+            color_icon: true
+          grid:
+            entity: sensor.srne_inv1_ct_total_power
+            name: Grid
+          home:
+            entity: sensor.srne_inv1_load_total_active_power
+            name: Load
+        watt_threshold: 1000
+        w_decimals: 0
+        kw_decimals: 2
+        min_flow_rate: 0.75
+        max_flow_rate: 6
+        title: Power Flow
+
+      # Solar Generation
+      - type: entities
+        title: Solar Generation
+        state_color: true
+        entities:
+          - entity: sensor.srne_inv1_pv_total_power
+            name: Total Power
+          - entity: sensor.srne_inv1_pv1_voltage
+            name: PV1 Voltage
+          - entity: sensor.srne_inv1_pv1_current
+            name: PV1 Current
+          - entity: sensor.srne_inv1_pv1_power
+            name: PV1 Power
+          - entity: sensor.srne_inv1_pv2_voltage
+            name: PV2 Voltage
+          - entity: sensor.srne_inv1_pv2_current
+            name: PV2 Current
+          - entity: sensor.srne_inv1_pv2_power
+            name: PV2 Power
+          - entity: sensor.srne_inv1_pv_charging_current
+            name: Charging Current
+
+      # Inverter Status
+      - type: entities
+        title: Inverter Status
+        state_color: true
+        entities:
+          - entity: sensor.srne_inv1_inverter_state
+            name: State
+          - entity: sensor.srne_inv1_inverter_total_apparent_power
+            name: Apparent Power
+          - entity: sensor.srne_inv1_inverter_voltage_a
+            name: Voltage Phase A
+          - entity: sensor.srne_inv1_inverter_voltage_b
+            name: Voltage Phase B
+          - entity: sensor.srne_inv1_inverter_current_a
+            name: Current Phase A
+          - entity: sensor.srne_inv1_inverter_current_b
+            name: Current Phase B
+          - entity: sensor.srne_inv1_inverter_frequency
+            name: Frequency
+          - entity: sensor.srne_inv1_bus_voltage
+            name: Bus Voltage
+
+      # Grid Status
+      - type: entities
+        title: Grid Status
+        state_color: true
+        entities:
+          - entity: sensor.srne_inv1_grid_total_power
+            name: Total Power
+          - entity: sensor.srne_inv1_grid_voltage_a
+            name: Voltage Phase A
+          - entity: sensor.srne_inv1_grid_voltage_b
+            name: Voltage Phase B
+          - entity: sensor.srne_inv1_grid_current_a
+            name: Current Phase A
+          - entity: sensor.srne_inv1_grid_current_b
+            name: Current Phase B
+          - entity: sensor.srne_inv1_grid_frequency
+            name: Frequency
+          - entity: sensor.srne_inv1_grid_power_a
+            name: Power Phase A
+          - entity: sensor.srne_inv1_grid_power_b
+            name: Power Phase B
+
+      # Load Status
+      - type: entities
+        title: Load Status
+        state_color: true
+        entities:
+          - entity: sensor.srne_inv1_load_total_active_power
+            name: Active Power
+          - entity: sensor.srne_inv1_load_total_power
+            name: Apparent Power
+          - entity: sensor.srne_inv1_load_power_a
+            name: Power Phase A
+          - entity: sensor.srne_inv1_load_power_b
+            name: Power Phase B
+          - entity: sensor.srne_inv1_load_current_a
+            name: Current Phase A
+          - entity: sensor.srne_inv1_load_current_b
+            name: Current Phase B
+          - entity: sensor.srne_inv1_load_ratio_a
+            name: Load Ratio Phase A
+          - entity: sensor.srne_inv1_load_ratio_b
+            name: Load Ratio Phase B
+
+      # Generator Port
+      - type: entities
+        title: Generator Port
+        state_color: true
+        entities:
+          - entity: sensor.srne_inv1_generator_port_voltage_a
+            name: Voltage Phase A
+          - entity: sensor.srne_inv1_generator_port_voltage_b
+            name: Voltage Phase B
+          - entity: sensor.srne_inv1_generator_port_current_a
+            name: Current Phase A
+          - entity: sensor.srne_inv1_generator_port_current_b
+            name: Current Phase B
+          - entity: sensor.srne_inv1_generator_port_active_power_a
+            name: Active Power Phase A
+          - entity: sensor.srne_inv1_generator_port_active_power_b
+            name: Active Power Phase B
+          - entity: sensor.srne_inv1_generator_port_apparent_power_a
+            name: Apparent Power Phase A
+          - entity: sensor.srne_inv1_generator_port_apparent_power_b
+            name: Apparent Power Phase B
+          - entity: sensor.srne_inv1_generator_port_frequency
+            name: Frequency
+
+      # Daily Energy Statistics
+      - type: entities
+        title: Daily Energy Statistics
+        entities:
+          - entity: sensor.srne_inv1_daily_pv_power_generated
+            name: Solar Production
+          - entity: sensor.srne_inv1_daily_load_consumed
+            name: Load Consumed
+          - entity: sensor.srne_inv1_daily_grid_battery_charging
+            name: Grid Charged
+          - entity: sensor.srne_inv1_daily_battery_charged
+            name: Battery Charged
+          - entity: sensor.srne_inv1_daily_battery_discharged
+            name: Battery Discharged
+          - entity: sensor.srne_inv1_daily_generator_battery_charged
+            name: Generator Charged
+          - entity: sensor.srne_inv1_daily_generator_load_consumed
+            name: Generator Load
+          - entity: sensor.srne_inv1_daily_home_load_consumed
+            name: Home Load
+
+      # Total Energy Statistics
+      - type: entities
+        title: Total Energy Statistics
+        entities:
+          - entity: sensor.srne_inv1_total_solar_generated_energy
+            name: Total Solar Generated
+          - entity: sensor.srne_inv1_total_load_consumed
+            name: Total Load Consumed
+          - entity: sensor.srne_inv1_total_battery_charged
+            name: Total Battery Charged
+          - entity: sensor.srne_inv1_total_battery_discharged
+            name: Total Battery Discharged
+          - entity: sensor.srne_inv1_total_generator_battery_charged
+            name: Total Generator Charged
+          - entity: sensor.srne_inv1_total_generator_load_consumed
+            name: Total Generator Load
+          - entity: sensor.srne_inv1_total_home_load_consumed
+            name: Total Home Load
+          - entity: sensor.srne_inv1_total_grid_battery_charging
+            name: Total Grid Charged
+          - entity: sensor.srne_inv1_total_generated_energy_to_grid
+            name: Total Grid Export
+
+      # Temperatures
+      - type: entities
+        title: System Temperatures
+        state_color: true
+        entities:
+          - entity: sensor.srne_inv1_temperature_dc_ac
+            name: DC-AC Converter
+          - entity: sensor.srne_inv1_temperature_dc_dc
+            name: DC-DC Converter
+          - entity: sensor.srne_inv1_temperature_transformer
+            name: Transformer
+
+      # BMS Status
+      - type: entities
+        title: Battery Management System
+        entities:
+          - entity: sensor.srne_inv1_bms_battery_voltage
+            name: BMS Voltage
+          - entity: sensor.srne_inv1_bms_battery_current
+            name: BMS Current
+          - entity: sensor.srne_inv1_bms_charge_limit_voltage
+            name: Charge Limit Voltage
+          - entity: sensor.srne_inv1_bms_charge_limit_current
+            name: Charge Limit Current
+          - entity: sensor.srne_inv1_bms_discharge_limit_current
+            name: Discharge Limit Current
+          - entity: sensor.srne_inv1_bms_max_cell_voltage
+            name: Max Cell Voltage
+          - entity: sensor.srne_inv1_bms_min_cell_voltage
+            name: Min Cell Voltage
+          - entity: sensor.srne_inv1_bms_max_cell_temperature
+            name: Max Cell Temp
+          - entity: sensor.srne_inv1_bms_min_cell_temperature
+            name: Min Cell Temp
+          - entity: sensor.srne_inv1_bms_battery_temperature
+            name: BMS Temperature
+          - entity: sensor.srne_inv1_bms_alarm_h
+            name: Alarm High
+          - entity: sensor.srne_inv1_bms_alarm_l
+            name: Alarm Low
+          - entity: sensor.srne_inv1_bms_protect_h
+            name: Protect High
+          - entity: sensor.srne_inv1_bms_protect_l
+            name: Protect Low
+          - entity: sensor.srne_inv1_bms_module_count
+            name: Module Count
+          - entity: sensor.srne_inv1_bms_system_fault_table
+            name: Fault Table
+
+      # Second Battery
+      - type: entities
+        title: Second Battery
+        entities:
+          - entity: sensor.srne_inv1_battery_2_voltage
+            name: Voltage
+          - entity: sensor.srne_inv1_battery_2_current
+            name: Current
+
+      # System Information
+      - type: entities
+        title: System Information
+        entities:
+          - entity: sensor.srne_inv1_model
+            name: Model
+          - entity: sensor.srne_inv1_serial_number
+            name: Serial Number
+          - entity: sensor.srne_inv1_app_version
+            name: Firmware Version
+          - entity: sensor.srne_inv1_system_date_time
+            name: System DateTime
+
+      # System Alerts & Errors
+      - type: entities
+        title: System Alerts
+        entities:
+          - entity: sensor.srne_inv1_inverter_error_flags
+            name: Error Status
+          - entity: sensor.srne_inv1_fail_code_0
+            name: Fail Code 0
+          - entity: sensor.srne_inv1_fail_code_1
+            name: Fail Code 1
+          - entity: sensor.srne_inv1_fail_code_2
+            name: Fail Code 2
+          - entity: sensor.srne_inv1_fail_code_3
+            name: Fail Code 3
+
+  - title: Settings
+    path: settings
+    icon: mdi:cog
+    layout:
+      type: grid
+      columns: 1
+    cards:
+      # Mode Selection - Always Visible
+      - type: entities
+        title: Operating Modes
+        entities:
+          - entity: select.srne_inv1_hybrid_grid_mode
+            name: Hybrid Mode
+          - entity: select.srne_inv1_generator_work_mode
+            name: Generator Mode
+          - entity: select.srne_inv1_battery_state_priority
+            name: Battery Priority
+          - entity: select.srne_inv1_pv_power_priority_mode
+            name: PV Power Priority
+          - entity: select.srne_inv1_parallel_mode
+            name: Parallel Mode
+
+      # Battery Type & Charge Settings
+      - type: custom:fold-entity-row
+        head:
+          type: section
+          label: Battery Type & Charge Settings
+        entities:
+          - entity: select.srne_inv1_battery_type
+            name: Battery Type
+          - entity: number.srne_inv1_bulk_charge_time
+            name: Bulk Charge Time
+          - entity: number.srne_inv1_bulk_charge_time
+            name: Bulk Charge Delay
+          - entity: number.srne_inv1_equalization_charge_delay_time
+            name: Equalization Delay
+          - entity: number.srne_inv1_equalization_charge_interval
+            name: Equalization Interval
+          - entity: number.srne_inv1_battery_equalization_charge_timeout
+            name: Equalization Timeout
+          - entity: switch.srne_inv1_battery_equalization_enable
+            name: Enable Equalization
+          - entity: button.srne_inv1_start_equalization_now
+            name: Start Equalization Now
+
+      # Battery Voltage Thresholds — all voltage-based limits in one place
+      - type: custom:fold-entity-row
+        head:
+          type: section
+          label: Battery Voltage Thresholds
+        entities:
+          - entity: number.srne_inv1_battery_overvoltage_protection_limit_hard
+            name: Overvoltage Limit
+          - entity: number.srne_inv1_battery_charge_voltage_limit_soft
+            name: Charge Voltage Limit
+          - entity: number.srne_inv1_battery_bulk_voltage
+            name: Bulk Charge Voltage
+          - entity: number.srne_inv1_battery_equalization_voltage
+            name: Equalization Voltage
+          - entity: number.srne_inv1_battery_float_charge_voltage
+            name: Float Charge Voltage
+          - entity: number.srne_inv1_rebulk_voltage
+            name: Rebulk Voltage
+          - entity: number.srne_inv1_battery_voltage_switch_to_inverter
+            name: Voltage Switch to Inverter
+          - entity: number.srne_inv1_battery_dc_switch_low_voltage
+            name: DC Switch Low Voltage
+          - entity: number.srne_inv1_battery_back_from_overdischarge_voltage
+            name: Overdischarge Return Voltage
+          - entity: number.srne_inv1_battery_undervoltage_warning
+            name: Undervoltage Warning
+          - entity: number.srne_inv1_battery_overdischarge_limit_soft
+            name: Overdischarge Limit
+          - entity: number.srne_inv1_battery_overdischarge_protection_limit_hard
+            name: Discharge Limit Voltage
+          - entity: number.srne_inv1_smart_load_off_voltage
+            name: Smart Load Voltage Off
+          - entity: number.srne_inv1_smart_load_on_voltage
+            name: Smart Load Voltage On
+
+      # SOC Thresholds — all state-of-charge limits in one place
+      - type: custom:fold-entity-row
+        head:
+          type: section
+          label: SOC Thresholds
+        entities:
+          - entity: number.srne_inv1_battery_soc_stop_charging
+            name: Stop Charging SOC
+          - entity: number.srne_inv1_battery_soc_discharge_cutoff
+            name: Stop Discharge SOC
+          - entity: number.srne_inv1_stop_load_home_discharge_battery_soc
+            name: Stop Grid Discharge SOC
+          - entity: number.srne_inv1_restart_load_home_discharge_battery_soc
+            name: Restart Grid Discharge SOC
+          - entity: number.srne_inv1_battery_soc_low_alarm
+            name: SOC Low Alarm
+          - entity: number.srne_inv1_smart_load_on_soc
+            name: Smart Load SOC On
+          - type: section
+            label: "Timed Schedule SOC Limits"
+          - entity: number.srne_inv1_timed_charge_1_soc_limit
+            name: Charge 1 SOC Limit
+          - entity: number.srne_inv1_timed_charge_2_soc_limit
+            name: Charge 2 SOC Limit
+          - entity: number.srne_inv1_timed_charge_3_soc_limit
+            name: Charge 3 SOC Limit
+          - entity: number.srne_inv1_timed_discharge_1_soc_limit
+            name: Discharge 1 SOC Limit
+          - entity: number.srne_inv1_timed_discharge_2_soc_limit
+            name: Discharge 2 SOC Limit
+          - entity: number.srne_inv1_timed_discharge_3_soc_limit
+            name: Discharge 3 SOC Limit
+
+      # Charging Configuration
+      - type: custom:fold-entity-row
+        head:
+          type: section
+          label: Charging Configuration
+        entities:
+          - entity: select.srne_inv1_charging_source_priority
+            name: Charging Source Priority
+          - entity: select.srne_inv1_bms_communication
+            name: BMS Communication
+          - entity: select.srne_inv1_bms_protocol
+            name: BMS Protocol
+          - entity: select.srne_inv1_charging_current_limit_mode
+            name: Charge Limit Mode
+          - entity: number.srne_inv1_battery_total_charging_current_limit
+            name: Total Charging Current Limit
+          - entity: number.srne_inv1_current_limit_for_charging
+            name: PV Current Limit
+          - entity: number.srne_inv1_grid_charging_current_limit
+            name: Grid Current Limit
+          - entity: number.srne_inv1_generator_charge_max_current
+            name: Generator Charge Max Current
+          - entity: number.srne_inv1_lithium_battery_active_current
+            name: Lithium Active Current
+          - entity: number.srne_inv1_battery_stop_charging_current_limit
+            name: Stop Charging Current Limit
+          - entity: number.srne_inv1_generator_rated_power
+            name: Generator Rated Power
+          - entity: switch.srne_inv1_battery_temperature_compensation
+            name: Battery Temperature Compensation
+
+      # SOC Balance & Smart Load
+      - type: custom:fold-entity-row
+        head:
+          type: section
+          label: SOC Balance & Smart Load
+        entities:
+          - entity: switch.srne_inv1_on_grid_discharge_soc_balance_enabled
+            name: On-Grid Discharge SOC Balance
+          - entity: switch.srne_inv1_on_grid_charge_soc_balance_enabled
+            name: On-Grid Charge SOC Balance
+          - entity: number.srne_inv1_soc_balance_ratio
+            name: SOC Balance Ratio
+          - entity: switch.srne_inv1_max_consumption_enabled
+            name: Max Consumption Enabled
+          - entity: switch.srne_inv1_pv_to_smart_load_enabled
+            name: PV to Smart Load
+          - entity: switch.srne_inv1_grid_to_smart_load_enabled
+            name: Grid to Smart Load
+
+      # Timed Charging Schedule 1
+      - type: custom:fold-entity-row
+        head:
+          type: section
+          label: "⏰ Timed Charge Schedule 1"
+        entities:
+          - entity: text.srne_inv1_charge_start_time_1
+            name: Start Time
+          - entity: text.srne_inv1_charge_end_time_1
+            name: End Time
+          - entity: number.srne_inv1_timed_charge_1_max_power
+            name: Max Power
+          - entity: switch.srne_inv1_timed_charge_1_grid_ac_source
+            name: Use Grid Source
+          - entity: switch.srne_inv1_timed_charge_1_generator_source
+            name: Use Generator Source
+          - entity: number.srne_inv1_timed_charge_1_stop_voltage
+            name: Stop Voltage
+
+      # Timed Charging Schedule 2
+      - type: custom:fold-entity-row
+        head:
+          type: section
+          label: "⏰ Timed Charge Schedule 2"
+        entities:
+          - entity: text.srne_inv1_charge_start_time_2
+            name: Start Time
+          - entity: text.srne_inv1_charge_end_time_2
+            name: End Time
+          - entity: number.srne_inv1_timed_charge_2_max_power
+            name: Max Power
+          - entity: switch.srne_inv1_timed_charge_2_grid_ac_source
+            name: Use Grid Source
+          - entity: switch.srne_inv1_timed_charge_2_generator_source
+            name: Use Generator Source
+          - entity: number.srne_inv1_timed_charge_2_stop_voltage
+            name: Stop Voltage
+
+      # Timed Charging Schedule 3
+      - type: custom:fold-entity-row
+        head:
+          type: section
+          label: "⏰ Timed Charge Schedule 3"
+        entities:
+          - entity: text.srne_inv1_charge_start_time_3
+            name: Start Time
+          - entity: text.srne_inv1_charge_end_time_3
+            name: End Time
+          - entity: number.srne_inv1_timed_charge_3_max_power
+            name: Max Power
+          - entity: switch.srne_inv1_timed_charge_3_grid_ac_source
+            name: Use Grid Source
+          - entity: switch.srne_inv1_timed_charge_3_generator_source
+            name: Use Generator Source
+          - entity: number.srne_inv1_timed_charge_3_stop_voltage
+            name: Stop Voltage
+
+      # Timed Discharge Schedule 1
+      - type: custom:fold-entity-row
+        head:
+          type: section
+          label: "⏰ Timed Discharge Schedule 1"
+        entities:
+          - entity: text.srne_inv1_discharge_start_time_1
+            name: Start Time
+          - entity: text.srne_inv1_discharge_end_time_1
+            name: End Time
+          - entity: number.srne_inv1_timed_discharge_1_max_power
+            name: Max Power
+          - entity: number.srne_inv1_timed_discharge_1_stop_voltage
+            name: Stop Voltage
+
+      # Timed Discharge Schedule 2
+      - type: custom:fold-entity-row
+        head:
+          type: section
+          label: "⏰ Timed Discharge Schedule 2"
+        entities:
+          - entity: text.srne_inv1_discharge_start_time_2
+            name: Start Time
+          - entity: text.srne_inv1_discharge_end_time_2
+            name: End Time
+          - entity: number.srne_inv1_timed_discharge_2_max_power
+            name: Max Power
+          - entity: number.srne_inv1_timed_discharge_2_stop_voltage
+            name: Stop Voltage
+
+      # Timed Discharge Schedule 3
+      - type: custom:fold-entity-row
+        head:
+          type: section
+          label: "⏰ Timed Discharge Schedule 3"
+        entities:
+          - entity: text.srne_inv1_discharge_start_time_3
+            name: Start Time
+          - entity: text.srne_inv1_discharge_end_time_3
+            name: End Time
+          - entity: number.srne_inv1_timed_discharge_3_max_power
+            name: Max Power
+          - entity: number.srne_inv1_timed_discharge_3_stop_voltage
+            name: Stop Voltage
+
+      # Inverter AC Configuration
+      - type: custom:fold-entity-row
+        head:
+          type: section
+          label: Inverter AC Configuration
+        entities:
+          - entity: select.srne_inv1_ac_voltage_range
+            name: AC Voltage Range
+
+      # Inverter Protections
+      - type: custom:fold-entity-row
+        head:
+          type: section
+          label: Inverter Protections & Alarms
+        entities:
+          - entity: switch.srne_inv1_alarm_enabled
+            name: Alarm Enabled
+          - entity: switch.srne_inv1_alarm_on_input_loss
+            name: Alarm on Input Loss
+          - entity: switch.srne_inv1_auto_restart_on_overload
+            name: Auto Restart on Overload
+          - entity: switch.srne_inv1_auto_restart_on_overheat
+            name: Auto Restart on Overheat
+          - entity: switch.srne_inv1_auto_bypass_on_overload
+            name: Auto Bypass on Overload
+          - entity: switch.srne_inv1_stop_on_bms_error
+            name: Stop on BMS Error
+          - entity: number.srne_inv1_over_discharge_delay_time
+            name: Overdischarge Delay Time
+
+      # Grid Connection & Protection
+      - type: custom:fold-entity-row
+        head:
+          type: section
+          label: Grid Connection & Protection
+        entities:
+          # ── Enable switches ──────────────────────────────────────
+          - entity: switch.srne_inv1_grid_function_enabled
+            name: Grid Function Enabled
+          - entity: switch.srne_inv1_grid_function_enabled_1
+            name: Grid Function Enabled 1
+          - entity: switch.srne_inv1_drms_enabled
+            name: DRMS Enabled
+          - entity: switch.srne_inv1_hlvrt_enabled
+            name: HLVRT Enabled
+          - entity: switch.srne_inv1_grid_average_ov_enabled
+            name: Average OV Enabled
+          - entity: switch.srne_inv1_grid_rocof_enabled
+            name: ROCOF Enabled
+          # ── Power & export ───────────────────────────────────────
+          - type: section
+            label: Power & Export
+          - entity: number.srne_inv1_max_grid_import
+            name: Max Grid Import
+          - entity: number.srne_inv1_max_grid_export
+            name: Max Grid Export
+          - entity: number.srne_inv1_zero_export_power
+            name: Zero Export Power
+          - entity: number.srne_inv1_grid_power_factor_set
+            name: Power Factor Set
+          # ── Reconnection ─────────────────────────────────────────
+          - type: section
+            label: Reconnection
+          - entity: number.srne_inv1_grid_reconnect_time
+            name: Reconnect Time
+          - entity: number.srne_inv1_normal_connection_delay_time
+            name: Normal Connection Delay
+          - entity: number.srne_inv1_normal_connection_power_ramp_time
+            name: Normal Connection Power Ramp
+          # ── Connection window ────────────────────────────────────
+          - type: section
+            label: Connection Window
+          - entity: number.srne_inv1_connection_voltage_low
+            name: Connection Voltage Low
+          - entity: number.srne_inv1_connection_voltage_high
+            name: Connection Voltage High
+          - entity: number.srne_inv1_connection_frequency_low
+            name: Connection Frequency Low
+          - entity: number.srne_inv1_connection_frequency_high
+            name: Connection Frequency High
+          # ── Smart meter ──────────────────────────────────────────
+          - type: section
+            label: Smart Meter
+          - entity: switch.srne_inv1_smart_meter_enabled
+            name: Smart Meter Enabled
+          - entity: number.srne_inv1_smart_meter_1_address
+            name: Smart Meter 1 Address
+          - entity: number.srne_inv1_smart_meter_2_address
+            name: Smart Meter 2 Address
+          # ── UV protection (low → high: 120V L2, 211V L1) ────────
+          - type: section
+            label: Under-Voltage Protection
+          - entity: number.srne_inv1_grid_uv_level_1
+            name: UV Level 1
+          - entity: number.srne_inv1_grid_uv_time_1
+            name: UV Time 1
+          # ── OV protection (low → high: 264V L1, 288V L2) ────────
+          - type: section
+            label: Over-Voltage Protection
+          - entity: number.srne_inv1_grid_ov_level_1
+            name: OV Level 1
+          - entity: number.srne_inv1_grid_ov_time_1
+            name: OV Time 1
+          # ── UF protection (low → high: 56.5Hz L2, 58.5Hz L1) ────
+          - type: section
+            label: Under-Frequency Protection
+          - entity: number.srne_inv1_grid_uf_level_1
+            name: UF Level 1
+          - entity: number.srne_inv1_grid_uf_time_1
+            name: UF Time 1
+          # ── OF protection (low → high: 61.2Hz L1, 62Hz L2) ──────
+          - type: section
+            label: Over-Frequency Protection
+          - entity: number.srne_inv1_grid_of_level_1
+            name: OF Level 1
+          - entity: number.srne_inv1_grid_of_time_1
+            name: OF Time 1
+
+      # Inverter Operating Switches
+      - type: custom:fold-entity-row
+        head:
+          type: section
+          label: Inverter Operating Controls
+        entities:
+          - entity: switch.srne_inv1_dc_load_switch
+            name: DC Load Switch
+          - entity: switch.srne_inv1_power_saving
+            name: Power Saving Mode
+
+      # Advanced Inverter Settings
+      - type: custom:fold-entity-row
+        head:
+          type: section
+          label: Advanced Inverter Settings
+        entities:
+          - entity: number.srne_inv1_rs_485_address
+            name: RS485 Address
+          - entity: switch.srne_inv1_allow_inverter_neutral_ground_bonding
+            name: Allow Inverter Neutral-Ground Bonding
+          - entity: switch.srne_inv1_iso_check_enabled
+            name: ISO Check Enabled
+          - entity: number.srne_inv1_iso_protect_point
+            name: ISO Protect Point
+          - entity: number.srne_inv1_derate_power
+            name: Derate Power
+          - entity: number.srne_inv1_max_line_current
+            name: Max Line Current
+          - entity: switch.srne_inv1_afci_enabled
+            name: AFCI Enabled
+          - entity: number.srne_inv1_dry_contact_grid_voltage_threshold
+            name: Dry Contact Grid Voltage Threshold
+          - entity: number.srne_inv1_dry_contact_pv_to_grid_threshold
+            name: Dry Contact PV to Grid Threshold
+          - entity: switch.srne_inv1_mppt_input_wind_enabled
+            name: MPPT Wind Input Enabled
+          - entity: switch.srne_inv1_week_to_on_time_enabled
+            name: Week to On Time Enabled
+          - entity: number.srne_inv1_load_consumption_total_threshold
+            name: Load Consumption Total Threshold
+          - entity: switch.srne_inv1_leakage_current_detect
+            name: Leakage Current Detect Enabled
+
+      # Danger controls toggle — always visible so it can be enabled
+      - type: entities
+        entities:
+          - entity: select.srne_inv1_enable_dangerous_operations
+            name: Enable Danger Controls
+            icon: mdi:shield-alert
+
+      # Danger Zone - only shown when enabled
+      - type: conditional
+        conditions:
+          - entity: select.srne_inv1_enable_dangerous_operations
+            state: "Enabled"
+        card:
+          type: entities
+          title: "⚠️ DANGER ZONE"
+          entities:
+            - entity: switch.srne_inv1_inverter_power
+              name: Inverter Power On/Off
+            - entity: button.srne_inv1_reset_inverter
+              name: Reset Inverter
+            - entity: button.srne_inv1_clear_statistics
+              name: Clear Statistics
+            - entity: button.srne_inv1_clear_errors
+              name: Clear Errors

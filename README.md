@@ -2,62 +2,74 @@
 
 ## Description
 
-This project reads data from an SRNE device using Modbus protocol v1.96 and publishes the data to a MQTT broker for integration with Home Assistant.
+This project reads data from an SRNE hybrid solar inverter using Modbus RTU and publishes it to an MQTT broker for integration with Home Assistant. It supports a wide range of SRNE inverter models and exposes sensor, number, select, switch, text, and button entities via MQTT discovery.
 
-This is still a work in progress and contributions are welcome!
-Most of the registry are done, I would say around 90%. Then I will add more data to home assistant.
+Features include:
 
-Right now, data is sent to a MQTT broker but I might want to add my own dashboard.
+- **Full register coverage** — sensors, controls, and statistics for DC data, inverter data, battery, PV, grid, load, generator port, BMS, and grid protection parameters
+- **Automatic register skip** — registers that fail to read or return out-of-range values are automatically skipped and their HA entities removed, then retried periodically
+- **Equalization availability** — equalization controls are only exposed when a lead-acid battery type is configured
+- **Write deduplication** — writes to Modbus are skipped if the value matches the last known value, reducing EEPROM wear
+- **Lovelace dashboard** — a ready-to-use dashboard template plus a script to generate a filtered version that omits unsupported registers
 
-I'm also considering adding support for JKBMS devices as well later on.
+---
 
 ## Configuration
 
-Create a `.env` file in the root directory of your project with the following configurations:
+Create a `.env` file in the root directory with the following settings:
 
 ```sh
-MQTT_HOST= #MQTT Broker Hostname or IP address
-MQTT_PORT= #MQTT Broker Port (default is 1883)
-MQTT_USERNAME= #The username for the MQTT broker.
-MQTT_PASSWORD= #The password for the MQTT broker.
-MQTT_TOPIC=srne1 #The MQTT topic to publish the data to.
+MQTT_HOST=                                       # MQTT broker hostname or IP
+MQTT_PORT=1883                                   # MQTT broker port
+MQTT_USERNAME=                                   # MQTT username
+MQTT_PASSWORD=                                   # MQTT password
+MQTT_TOPIC=srne1                                 # Device topic prefix (becomes the HA device name)
 
-DEBUG=false
+DEBUG=false                                      # Set true for verbose register read logging
 
-DEVICE_MANUFACTURER=SRNE #Manufacturer of the device, name will be displayed in Home Assistant as device.
-MODBUS_ADDRESS=1 #Modbus address of the device (usually 1)
-MODBUS_DEVICE="/dev/ttyUSB0" #tty port to use for modbus communication
-PARALLEL=false #false:Single Inverter, N:N Parallel Inverters, simulate parallel registers by multiplying connected inverter register by N, true:Parallel Inverters, use inverter parallel registers(must be supported by inverter)
-SPLIT_PHASE=2 #Number of phase for the inverter (1,2,3)
-NB_MPPT_TRACKERS=1 #Number of MPPT tracker connected (0,1,2)
-BATTERY_CONNECTED=true #Is a battery connected (true,false)
+DEVICE_MANUFACTURER=SRNE                         # Shown as manufacturer in HA device info
+MODBUS_ADDRESS=1                                 # Modbus device address (usually 1)
+MODBUS_DEVICE=/dev/ttyUSB0                       # Serial port for Modbus RTU
+MODBUS_BAUDRATE=9600                             # Serial baud rate
+MODBUS_TIMEOUT=0.1                               # Seconds to wait for a register response (default 0.1)
 
-HAS_AMBIENT_TEMPERATURE=false # does the inverter has ambient temperature sensor (true/false)
+SPLIT_PHASE=2                                    # Inverter phase count: 1, 2, or 3
+PARALLEL=false                                   # false=single inverter, true=parallel (uses parallel registers),
+                                                 # N=simulate parallel by multiplying single-inverter registers by N
+NB_MPPT_TRACKERS=2                               # Number of connected MPPT inputs (0-6)
+BATTERY_CONNECTED=true                           # Whether a battery is connected
 
-SYNC_DATETIME_ENABLED=true #Update datetime from interval
-SYNC_DATETIME_INTERVAL=60 #Update inverter datetime every 60 minutes
-#If empty, system will use local time. If not, you can specify your timezone (e.g., "America/New_York")
-TIMEZONE=
+HAS_AMBIENT_TEMPERATURE=false                    # Whether the inverter has an ambient temperature sensor
 
-PUBLISH_SYSTEM=true # publish system information to mqtt at statup (true,false)
+SYNC_DATETIME_ENABLED=true                       # Keep inverter clock in sync with host
+SYNC_DATETIME_INTERVAL=60                        # How often to sync datetime, in minutes
+TIMEZONE=                                        # Optional: e.g. America/New_York (defaults to system time)
 
-#### UPDATE INTERVALS ####
-PV_INTERVAL=1000 # time in ms between data update
-BATTERY_INTERVAL=1000 # time in ms between data update
-LOAD_INTERVAL=2000
-GRID_INTERVAL=2000
-INVETER_INTERVAL=2000
-TEMPERATURE_INTERVAL=5000 # time in ms between data update
-GENERAL_INTERVAL=5000 # time in ms between data update
-REFRESH_INTERVAL=1000 # time before updating a value that was just set
-STATISTICS_INTERVAL=60000
-LOOP_SLEEP=200 # time in ms to sleep after a full loop. too small value could crash the modbus communication (default is 200ms)
+PUBLISH_SYSTEM=true                              # Publish firmware/model info at startup
 
+#### UPDATE INTERVALS (milliseconds) ####
+PV_INTERVAL=1000                                 # Solar panel data
+BATTERY_INTERVAL=5000                            # Battery data
+LOAD_INTERVAL=10000                              # Load data
+GRID_INTERVAL=10000                              # Grid data
+INVETER_INTERVAL=10000                           # Inverter data
+TEMPERATURE_INTERVAL=60000                       # Temperature sensors
+GENERAL_INTERVAL=60000                           # Settings and configuration registers
+STATISTICS_INTERVAL=300000                       # Energy totals — 5 min default, rarely need faster
+SYSTEM_INTERVAL=600000                           # Firmware/model info
+REFRESH_INTERVAL=200                             # Delay before re-reading a register after writing it
+LOOP_SLEEP=200                                   # Milliseconds between main loop iterations
+
+#### ADVANCED TUNING ####
+MAX_READS_PER_LOOP=20                            # Cap on Modbus reads per loop iteration (prevents bus saturation)
+MODBUS_SKIP_THRESHOLD=5                          # Consecutive failures before a register is skipped
+MODBUS_SKIP_RETRY_INTERVAL=3600                  # Seconds before a skipped register is retried (default 1 hour)
+MODBUS_SKIP_STATE_FILE=register_skip_state.json  # File to persist skip state across restarts
 ```
 
-## Installation
+---
 
-1. Clone project and setup venv with the required dependencies:
+## Installation
 
 ```sh
 git clone https://github.com/timbit123/srne-modbus
@@ -66,23 +78,21 @@ python3 -m venv ./venv
 ./venv/bin/pip3 install -r requirements.txt
 ```
 
-2. Create and configure the `.env` file as described above.
-
-## Usage
-
-Run the script to start reading data from the SRNE device and publishing it to the MQTT broker:
+Create and configure the `.env` file, then run:
 
 ```sh
-./venv/bin/python3 [main.py]
+./venv/bin/python3 main.py
 ```
 
-## Setup to Run Automatically on Boot
+---
 
-If your OS uses systemd, you can create a service file that will start the script automatically on boot and restart it if it crashes:
+## Running as a systemd Service
 
-```sh
+Create `/etc/systemd/system/srne-modbus.service`:
+
+```ini
 [Unit]
-Description=SRNE Modbus
+Description=SRNE Modbus to MQTT
 After=network-online.target
 Wants=network-online.target
 
@@ -90,27 +100,93 @@ Wants=network-online.target
 Type=simple
 Restart=always
 RestartSec=5s
-User=<user script will run as>
-WorkingDirectory=<path where project was cloned>/srne-modbus
-ExecStart=<path where project was cloned>/srne-modbus/venv/bin/python3 main.py
+User=<user>
+WorkingDirectory=<path>/srne-modbus
+Environment=PYTHONUNBUFFERED=1
+ExecStart=<path>/srne-modbus/venv/bin/python3 main.py
 
 [Install]
 WantedBy=multi-user.target
 ```
 
-Place the file at /etc/systemd/system/srne-modbus.service, then enable and start by running:
+Enable and start:
 
 ```sh
 sudo systemctl enable srne-modbus.service
 sudo systemctl start srne-modbus.service
 ```
 
-## TODOs
+---
 
-- Add remaining modbus registers
-- Add remaining MQTT topics read/writes
+## Automatic Register Skip
 
-## TODOs v2
+Some registers are not supported by all firmware versions or inverter models. Rather than flooding the Modbus bus with retries or showing unavailable entities in HA, the script automatically detects and handles these:
 
-- Add JKBMS
-- Create webserver with better graphs and data visualization
+- **Communication failures** — if a register fails to respond `MODBUS_SKIP_THRESHOLD` times consecutively, it is marked as skipped
+- **Out-of-range values** — if a number register returns a value outside its configured min/max (e.g. a firmware default of 585V for a grid protection threshold), it is also counted as a failure
+- **HA entity removal** — when a register is skipped, its Home Assistant discovery entry is cleared so the entity disappears from HA
+- **Automatic retry** — after `MODBUS_SKIP_RETRY_INTERVAL` seconds (default 1 hour), the register is tried again; if it now succeeds, the HA entity is re-announced
+- **Persistent state** — skip state is saved to `register_skip_state.json` so registers that failed in a previous run are not retried on startup until their retry interval has elapsed
+
+To reset skip state and retry all registers immediately, delete `register_skip_state.json` and restart the script.
+
+---
+
+## Lovelace Dashboard
+
+Two dashboard files are provided:
+
+| File | Purpose |
+|---|---|
+| `lovelace-dashboard.yaml` | Full template — all entities including potentially unsupported ones |
+| `lovelace-dashboard-current.yaml` | Generated — filtered to only show entities whose registers are working |
+
+### Generating the filtered dashboard
+
+```sh
+cd /path/to/srne-modbus
+python3 generate_dashboard.py
+```
+
+Options:
+
+```
+--output FILE        Output path (default: lovelace-dashboard-current.yaml)
+--mqtt-topic TOPIC   Override MQTT_TOPIC from .env
+--skip-state FILE    Path to skip state JSON (default: register_skip_state.json)
+--template FILE      Template dashboard to filter (default: lovelace-dashboard.yaml)
+```
+
+Re-run after the script has been running for a while (once unsupported registers have been identified and persisted to `register_skip_state.json`) to get the cleanest dashboard.
+
+### Installing the dashboard in Home Assistant
+
+1. In HA, go to **Settings → Dashboards → Add Dashboard**
+2. Choose **YAML mode**
+3. Paste the contents of `lovelace-dashboard-current.yaml` (or the full template)
+
+### Required HACS integrations
+
+Install these via **HACS → Frontend**:
+
+| Card | URL | Required for |
+|---|---|---|
+| `custom:power-flow-card-plus` | https://github.com/flixlix/power-flow-card-plus | Power flow diagram on Overview |
+| `custom:fold-entity-row` | https://github.com/thomasloven/lovelace-fold-entity-row | Collapsible sections in Settings |
+
+---
+
+## Dangerous Controls
+
+Some inverter controls (power off, reset, clear statistics) are gated behind a safety switch. To access them:
+
+1. In the Settings view, find **Enable Danger Controls** and set it to **Enabled**
+2. The **Danger Zone** section will appear at the bottom of Settings with the protected controls
+
+---
+
+## Multi-Inverter Setup
+
+Run a separate instance of the script for each inverter, each with its own `.env` file specifying a unique `MQTT_TOPIC`, `MODBUS_DEVICE` (serial port), and `MODBUS_ADDRESS`. Each instance creates its own HA device with its own set of entities.
+
+If multiple inverters share the same RS-485 bus, they must have different `MODBUS_ADDRESS` values and use the same `MODBUS_DEVICE`. If they are on separate serial adapters, each instance gets its own `MODBUS_DEVICE` path.

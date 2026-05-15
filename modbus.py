@@ -1,5 +1,6 @@
 import os
 import math
+import json
 import minimalmodbus
 from datetime import datetime
 from dotenv import load_dotenv
@@ -20,17 +21,83 @@ instr.serial.timeout = float(os.getenv("MODBUS_TIMEOUT", "0.1"))
 _modbus_failures = 0
 _MODBUS_FAILURE_THRESHOLD = 20
 
+# Per-register failure tracking — skip registers that repeatedly time out
+_REGISTER_SKIP_THRESHOLD: int = int(os.getenv("MODBUS_SKIP_THRESHOLD", "5"))
+_REGISTER_RETRY_INTERVAL: float = float(os.getenv("MODBUS_SKIP_RETRY_INTERVAL", "3600"))
+_SKIP_STATE_FILE: str = os.getenv("MODBUS_SKIP_STATE_FILE", "register_skip_state.json")
+_register_failures: dict[int, int] = {}
+_register_skip_time: dict[int, float] = {}
 
-def _record_modbus_result(success: bool):
+
+def _load_skip_state():
+    """Load persisted skip state so previously-failing registers stay skipped across restarts."""
+    try:
+        with open(_SKIP_STATE_FILE) as f:
+            data = json.load(f)
+        for hex_key, ts in data.items():
+            _register_skip_time[int(hex_key, 16)] = float(ts)
+        if _register_skip_time:
+            print(f"Loaded {len(_register_skip_time)} skipped registers from {_SKIP_STATE_FILE}")
+    except FileNotFoundError:
+        pass
+    except Exception as e:
+        print(f"Could not load register skip state: {e}")
+
+
+def _save_skip_state():
+    """Persist current skip state to disk."""
+    try:
+        with open(_SKIP_STATE_FILE, "w") as f:
+            json.dump({f"0x{r:04X}": ts for r, ts in _register_skip_time.items()}, f, indent=2)
+    except Exception as e:
+        print(f"Could not save register skip state: {e}")
+
+
+_load_skip_state()
+
+
+def record_invalid_value(register: int):
+    """Treat an out-of-range or unrecognised register value the same as a read
+    failure — counts toward the skip threshold so bad registers get disabled."""
+    _record_modbus_result(False, register)
+
+
+def is_register_available(register: int) -> bool:
+    """Return False if the register has been skipped due to repeated failures.
+    Automatically un-skips after MODBUS_SKIP_RETRY_INTERVAL seconds."""
+    skip_time = _register_skip_time.get(register)
+    if skip_time is None:
+        return True
+    import time as _time
+    if _time.time() - skip_time >= _REGISTER_RETRY_INTERVAL:
+        del _register_skip_time[register]
+        _register_failures.pop(register, None)
+        _save_skip_state()
+        print(f"Modbus: retrying register 0x{register:04X}")
+        return True
+    return False
+
+
+def _record_modbus_result(success: bool, register: int = 0):
     global _modbus_failures
     if success:
         _modbus_failures = 0
+        _register_failures.pop(register, None)
     else:
         _modbus_failures += 1
+        if register:
+            count = _register_failures.get(register, 0) + 1
+            _register_failures[register] = count
+            if count >= _REGISTER_SKIP_THRESHOLD and register not in _register_skip_time:
+                import time as _time
+                _register_skip_time[register] = _time.time()
+                print(f"Modbus: skipping register 0x{register:04X} after {count} failures")
+                _save_skip_state()
 
 
 def check_reconnect():
-    """Reopen the serial port if too many consecutive modbus failures (e.g. USB disconnect)."""
+    """Reopen the serial port if too many consecutive modbus failures (e.g. USB disconnect).
+    Also clears all per-register skip state so every register gets a fresh chance."""
     global instr, _modbus_failures
     if _modbus_failures < _MODBUS_FAILURE_THRESHOLD:
         return
@@ -44,6 +111,9 @@ def check_reconnect():
         instr.serial.baudrate = 9600
         instr.serial.timeout = float(os.getenv("MODBUS_TIMEOUT", "0.1"))
         _modbus_failures = 0
+        _register_failures.clear()
+        _register_skip_time.clear()
+        _save_skip_state()
         print("Modbus serial port reopened successfully")
     except Exception as e:
         print(f"Modbus reconnect failed: {e}")
@@ -170,12 +240,14 @@ def read_register_value(
     format_str: str = "",
 ):
     """Generic single-register read.  format_str is auto-derived from scale when empty."""
+    if not is_register_available(register):
+        return None
     try:
         result = instr.read_register(register, signed=signed)
     except:
-        _record_modbus_result(False)
+        _record_modbus_result(False, register)
         return None
-    _record_modbus_result(True)
+    _record_modbus_result(True, register)
     result = float(result) * scale
     if format_str:
         if integer:
@@ -199,12 +271,14 @@ def read_register_value(
 def read_clamped_register(register: int, scale: float = 1.0, name: str = "") -> str | None:
     """Read a signed register and clamp to zero if negative.
     Used for load current/power registers that can transiently read negative."""
+    if not is_register_available(register):
+        return None
     try:
         result = max(0, instr.read_register(register, signed=True))
     except:
-        _record_modbus_result(False)
+        _record_modbus_result(False, register)
         return None
-    _record_modbus_result(True)
+    _record_modbus_result(True, register)
     result = float(result) * scale
     value = _format_scaled(result, scale)
     if name:
@@ -384,12 +458,14 @@ def write_bit_register(register: int, bit: int, value: str) -> bool | None:
 def read_long_register(register: int, scale: float = 1.0, name: str = "") -> str | None:
     """Read a 32-bit little-endian value from two consecutive registers.
     Returns a formatted string after applying scale."""
+    if not is_register_available(register):
+        return None
     try:
         result = instr.read_long(register, byteorder=minimalmodbus.BYTEORDER_LITTLE_SWAP)
     except:
-        _record_modbus_result(False)
+        _record_modbus_result(False, register)
         return None
-    _record_modbus_result(True)
+    _record_modbus_result(True, register)
     result = float(result) * scale
     value = _format_scaled(result, scale)
     if name:
@@ -401,12 +477,14 @@ def read_datetime_register(register: int, name: str = "") -> str | None:
     """Read three consecutive registers encoding an SRNE packed datetime.
     Format per register: high byte = first field, low byte = second field.
     Registers: [year|month, day|hour, minute|second]. Returns 'YYYY-MM-DD HH:MM:SS'."""
+    if not is_register_available(register):
+        return None
     try:
         results = instr.read_registers(register, 3)
     except:
-        _record_modbus_result(False)
+        _record_modbus_result(False, register)
         return None
-    _record_modbus_result(True)
+    _record_modbus_result(True, register)
     year   = (results[0] >> 8) & 0xFF
     month  =  results[0]       & 0xFF
     day    = (results[1] >> 8) & 0xFF

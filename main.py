@@ -28,6 +28,60 @@ writing_queue = []
 publishing_queue = []
 
 _last_equalization_avail: str = ""
+_hidden_register_topics: set = set()
+
+
+def _is_value_in_range(value: str, vals: dict) -> bool:
+    """Return False if a number entity value is outside its configured min/max.
+    Non-number entities always pass."""
+    if vals.get("topic_type") != "number":
+        return True
+    config = vals.get("config", {})
+    min_val = config.get("min")
+    max_val = config.get("max")
+    if min_val is None and max_val is None:
+        return True
+    try:
+        v = float(value)
+        if min_val is not None and v < float(min_val):
+            return False
+        if max_val is not None and v > float(max_val):
+            return False
+    except (ValueError, TypeError):
+        return False
+    return True
+
+
+def _hide_topic(client, name: str, vals: dict):
+    """Publish an empty retained payload to remove a topic from HA discovery."""
+    field_name = f"{mqtt_topic}-{name.replace('/', '-')}"
+    client.publish(
+        f"homeassistant/{vals.get('topic_type', 'sensor')}/{field_name}/config",
+        "",
+        retain=True,
+    )
+    print(f"Disabled HA entity for unsupported register: {name}")
+
+
+def _restore_topic(client, name: str, vals: dict):
+    """Re-publish a discovery message for a topic whose register has recovered."""
+    field_name = f"{mqtt_topic}-{name.replace('/', '-')}"
+    discovery_data = {
+        "device": device,
+        "uniq_id": field_name,
+        **{key: vals["config"][key] for key in vals["config"]},
+    }
+    if vals.get("topic_type", "sensor") != "button":
+        discovery_data["state_topic"] = (
+            f"{mqtt_topic}/{vals.get('topic_type', 'sensor')}/{name}/state"
+        )
+    client.publish(
+        f"homeassistant/{vals.get('topic_type', 'sensor')}/{field_name}/config",
+        json.dumps(discovery_data),
+        retain=True,
+    )
+    vals["last_update"] = None  # force immediate re-read
+    print(f"Restored HA entity for recovered register: {name}")
 
 
 def publish_equalization_availability(client):
@@ -81,6 +135,14 @@ def on_message(client, userdata, msg):
                 )
                 return
     if topic in mqtt_set_config:
+        last_value = mqtt_config.get(topic, {}).get("last_value")
+        if (
+            mqtt_config.get(topic, {}).get("topic_type") != "button"
+            and last_value is not None
+            and str(payload) == str(last_value)
+        ):
+            print(f"Received message: {msg.payload.decode()} (skipping write to {topic}: value unchanged)")
+            return
         writing_queue.append((mqtt_set_config[topic], payload, topic))
 
     print(f"Received message: {msg.payload.decode()}")
@@ -90,6 +152,18 @@ def subscribe(client):
     for name, vals in mqtt_config.items():
         if not vals.get("enabled", True):
             continue
+
+        # Check skip state before publishing discovery — avoids showing then hiding entities
+        if "args" in vals:
+            register = vals["args"].get("register")
+            if register is not None:
+                if not modbus.is_register_available(register):
+                    _hidden_register_topics.add(name)
+                    continue
+                elif name in _hidden_register_topics:
+                    # Register recovered since last connect — restore it
+                    _hidden_register_topics.discard(name)
+
         topic = f"{mqtt_topic}/{vals.get('topic_type', 'sensor')}/{name}/state"
         field_name = f"{mqtt_topic}-{str(name).replace('/','-')}"
 
@@ -120,19 +194,14 @@ def subscribe(client):
 
 def update_inverter_datetime():
     global last_datetime_sync
-    current_time = time.time()
     if not datetime_sync_enabled:
         return
     if (
         last_datetime_sync is None
-        or (current_time - last_datetime_sync) > datetime_sync_interval
+        or (time.time() - last_datetime_sync) > datetime_sync_interval
     ):
         modbus.write_system_date_time()
-        # sleep in case inverter need to resync stuff. 
-        # I'm trying to understand why I'm getting no communication error after some time
-        time.sleep(5)
-
-        last_datetime_sync = current_time
+        last_datetime_sync = time.time()
 
 
 # Create an instance of the MQTT client
@@ -186,12 +255,17 @@ def signal_handler(signum, frame):
 signal.signal(signal.SIGINT, signal_handler)
 signal.signal(signal.SIGTERM, signal_handler)
 
-# Stagger initial update times so topics with the same interval don't all fire at once
+# Stagger initial update times so all entries fire within the first 60 seconds,
+# spread evenly to avoid bus saturation.
+# Formula: last_update = now - interval + jitter  →  due in jitter seconds (0..60s).
+# Previous formula (now - jitter) was wrong for long intervals: a 600s entry with
+# jitter=5 would not fire for another 595 seconds.
 _now = time.time()
+_JITTER_MAX = 60.0
 for _vals in mqtt_config.values():
     _interval = _vals.get("interval")
     if _interval and _interval > 0:
-        _vals["last_update"] = _now - random.uniform(0, _interval)
+        _vals["last_update"] = _now - _interval + random.uniform(0, min(_interval, _JITTER_MAX))
 
 # Loop continuously sending data to Home Assistant
 client.loop_start()
@@ -275,6 +349,16 @@ while running:
 
             is_modbus_read = "args" in vals
             if is_modbus_read:
+                register = vals["args"].get("register")
+                if register is not None:
+                    if not modbus.is_register_available(register):
+                        if name not in _hidden_register_topics:
+                            _hidden_register_topics.add(name)
+                            _hide_topic(client, name, vals)
+                        continue
+                    if name in _hidden_register_topics:
+                        _hidden_register_topics.discard(name)
+                        _restore_topic(client, name, vals)
                 if modbus_reads_this_loop >= max_reads_per_loop:
                     continue
                 modbus_reads_this_loop += 1
@@ -286,12 +370,12 @@ while running:
                 value = vals["value"](**vals["args"])
             else:
                 value = vals["value"]()
-
-            if value == None:
-                print(f"Failed to get value for {name}")
-                time.sleep(5)
-                break
-
+            if value is not None and is_modbus_read:
+                register = vals["args"].get("register")
+                if register is not None and not _is_value_in_range(value, vals):
+                    debug(f"Out-of-range value for {name}: {value}")
+                    modbus.record_invalid_value(register)
+                    value = None
             if value != None:
                 mqtt_config[name]["last_update"] = current_time
                 mqtt_config[name]["last_value"] = value
